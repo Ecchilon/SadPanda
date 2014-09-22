@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="non_h">#FF80E6FF</color>
+    <color name="doujinshi">#FFFF3333</color>
+    <color name="game_cg">#FF009933</color>
+    <color name="manga">#FFFF9933</color>
+    <color name="western">#FF66FF66</color>
+    <color name="image_set">#FF0066FF</color>
+    <color name="artist_cg">#FFFFFF00</color>
+    <color name="cosplay">#FF993399</color>
+    <color name="asian_porn">#FFFF99FF</color>
+    <color name="misc">#FFE2E2E2</color>
+    <color name="black_overlay">#66000000</color>
+</resources>

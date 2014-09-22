@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">SadPanda</string>
+    <string name="title_section1">Section 1</string>
+    <string name="title_section2">Section 2</string>
+    <string name="title_section3">Section 3</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="action_example">Example action</string>
+    <string name="action_settings">Settings</string>
+    <string name="login_request">Please log in first</string>
+    <string name="login_menu">Log in</string>
+    <string name="logout_menu">Log out</string>
+    <string name="action_search">Search</string>
+    <string name="query_hint">Search Keywords</string>
+    <string name="title_activity_overview">OverviewActivity</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="image_loading_failed">Failed to load image</string>
+    <string name="image_description">Image for this page</string>
+    <string name="refresh_menu">Refresh</string>
+
+</resources>
