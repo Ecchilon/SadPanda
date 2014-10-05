@@ -11,14 +11,14 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 public class GalleryEntry {
-    private Long gid;
+    private Long galleryId;
     private String token;
     private String title;
     private String title_jpn;
-    private String category;
+    private Category category;
     private String thumb;
     private String uploader;
-    private Integer filecount;
+    private Integer fileCount;
     private Long filesize;
     private boolean expunged;
     private Float rating;

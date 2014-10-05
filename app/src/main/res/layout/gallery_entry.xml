@@ -1,18 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="wrap_content">
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="@dimen/small_margin">
     <ImageView
         android:id="@+id/thumb"
-        android:layout_margin="@dimen/small_margin"
         android:layout_width="@dimen/thumb_size"
-        android:layout_height="@dimen/thumb_size" />
+        android:layout_height="@dimen/thumb_size"
+        android:layout_marginRight="@dimen/small_margin"
+        android:layout_marginEnd="@dimen/small_margin"/>
 
     <TextView
         android:id="@+id/title"
+        style="@style/body"
+        android:text="Long test message which should wrap around and lorem ipsum bla bla"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_toRightOf="@id/thumb"
         android:layout_toEndOf="@id/thumb"
-        android:layout_alignTop="@id/thumb"/>
+        android:layout_alignTop="@id/thumb"
+        android:layout_marginBottom="@dimen/tiny_margin"
+        android:maxLines="1"
+        android:ellipsize="end"/>
+
+    <TextView
+        android:id="@+id/subtitle"
+        style="@style/subtitle"
+        android:text="10 entries"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@id/thumb"
+        android:layout_toEndOf="@id/thumb"
+        android:layout_toLeftOf="@+id/content_type"
+        android:layout_toStartOf="@+id/content_type"
+        android:layout_below="@id/title"
+        android:maxLines="2"
+        android:ellipsize="end"/>
+
+    <ImageView
+        android:id="@+id/content_type"
+        android:layout_alignBottom="@id/thumb"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_width="@dimen/content_type_size"
+        android:layout_height="@dimen/content_type_size"
+        android:layout_marginLeft="@dimen/small_margin"
+        android:layout_marginStart="@dimen/small_margin"
+        android:src="@drawable/content_type"/>
 </RelativeLayout>

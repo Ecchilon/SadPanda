@@ -21,31 +21,40 @@ import com.squareup.picasso.RequestCreator;
 
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
+import uk.co.senab.photoview.PhotoView;
 
 /**
  * Created by Alex on 1/24/14.
  */
 public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader.ImageListener, Callback {
 
+    public static final String MAX_SCALE_KEY = "ExhentaiMaxScale";
+
+    public static final float MAX_SCALE = 2.0f;
+
     @InjectView(R.id.image_view)
-	private ImageView mImageView;
+	private PhotoView mImageView;
     @InjectView(R.id.loading_view)
 	private ProgressBar loadingBar;
     @InjectView(R.id.failure_text)
 	private TextView failureText;
 
 	private ImageEntry mImageEntry;
+    private float mMaxZoom = MAX_SCALE;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
+
+        if(getArguments() != null && getArguments().containsKey(MAX_SCALE_KEY)) {
+            mMaxZoom = getArguments().getFloat(MAX_SCALE_KEY);
+        }
     }
 
     @Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
-
 		return inflater.inflate(R.layout.fragment_single_image, container, false);
 	}
 
@@ -54,6 +63,17 @@ public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader
         super.onCreateOptionsMenu(menu, inflater);
 
         inflater.inflate(R.menu.image, menu);
+    }
+
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        mImageView.setMaximumScale(mMaxZoom);
+
+        if (mImageEntry != null && mImageEntry.getSrc() != null) {
+            loadImage(true);
+        }
     }
 
     @Override
@@ -67,16 +87,10 @@ public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-	public void onViewCreated(View view, Bundle savedInstanceState) {
-		super.onViewCreated(view, savedInstanceState);
-
-		if (mImageEntry != null && mImageEntry.getSrc() != null) {
-			loadImage(true);
-		}
-	}
-
     private void loadImage(boolean cache) {
+        loadingBar.setVisibility(View.VISIBLE);
+        failureText.setVisibility(View.GONE);
+
         if(mImageEntry == null || mImageEntry.getSrc() == null) {
             return;
         }
@@ -106,10 +120,12 @@ public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader
     @Override
     public void onError() {
         failureText.setVisibility(View.VISIBLE);
+        loadingBar.setVisibility(View.GONE);
     }
 
     @Override
     public void onError(ApiErrorCode code) {
         failureText.setVisibility(View.VISIBLE);
+        Log.e("ScreenSlidePageFragment", code.name());
     }
 }

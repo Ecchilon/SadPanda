@@ -4,8 +4,8 @@ import android.net.Uri;
 import android.os.Looper;
 
 import com.ecchilon.sadpanda.imageviewer.ImageEntry;
+import com.ecchilon.sadpanda.overview.Category;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
-import com.google.gson.JsonElement;
 import com.google.inject.Inject;
 import com.loopj.android.http.AsyncHttpClient;
 
@@ -114,7 +114,7 @@ public class DataLoader {
             String content = readResponse(response);
 
             List<ImageEntry> list = new ArrayList<ImageEntry>();
-            long galleryId = gallery.getGid();
+            long galleryId = gallery.getGalleryId();
             Matcher matcher = pPhotoUrl.matcher(content);
 
             while (matcher.find()) {
@@ -176,7 +176,7 @@ public class DataLoader {
 
             JSONObject json = new JSONObject();
 
-            json.put("gid", gallery.getGid());
+            json.put("gid", gallery.getGalleryId());
             json.put("page", photo.getPage());
             json.put("imgkey", photo.getToken());
             json.put("showkey", showkey);
@@ -298,13 +298,13 @@ public class DataLoader {
 
                 GalleryEntry gallery = new GalleryEntry();
 
-                gallery.setGid(id);
+                gallery.setGalleryId(id);
                 gallery.setToken(data.getString("token"));
                 gallery.setTitle(data.getString("title"));
                 gallery.setTitle_jpn(data.getString("title_jpn"));
-                gallery.setCategory(data.getString("category"));
+                gallery.setCategory(Category.fromName(data.getString("category")));
                 gallery.setThumb(data.getString("thumb"));
-                gallery.setFilecount(data.getInt("filecount"));
+                gallery.setFileCount(data.getInt("filecount"));
                 gallery.setRating((float) data.getDouble("rating"));
                 gallery.setUploader(data.getString("uploader"));
                 JSONArray tags = data.getJSONArray("tags");
@@ -343,10 +343,10 @@ public class DataLoader {
         }
     }
 
-    public JSONArray getGalleryTokenList(JSONArray pagelist) throws ApiCallException {
+    public JSONArray getGalleryTokenList(JSONArray pageList) throws ApiCallException {
         try {
             JSONObject obj = new JSONObject();
-            obj.put("pagelist", pagelist);
+            obj.put("pagelist", pageList);
 
             JSONObject json = callApi("gtoken", obj);
 
@@ -400,7 +400,7 @@ public class DataLoader {
     }
 
     private static String getGalleryUrl(GalleryEntry galleryEntry, int page) {
-        String base = String.format(GALLERY_URL_EX, galleryEntry.getGid(), galleryEntry.getToken());
+        String base = String.format(GALLERY_URL_EX, galleryEntry.getGalleryId(), galleryEntry.getToken());
         Uri.Builder builder = Uri.parse(base).buildUpon();
         builder.appendQueryParameter("p", Integer.toString(page));
 

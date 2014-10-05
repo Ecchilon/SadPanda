@@ -4,28 +4,25 @@ import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.v7.app.ActionBarActivity;
-import android.view.GestureDetector;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 
 import com.ecchilon.sadpanda.R;
-import com.ecchilon.sadpanda.RoboActionBarActivity;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.google.gson.Gson;
 
+import roboguice.activity.RoboFragmentActivity;
 import roboguice.inject.ContentView;
 
 @ContentView(R.layout.activity_image)
-public class ImageViewerActivity extends RoboActionBarActivity implements ImageViewerFragment.VisibilityToggler {
+public class ImageViewerActivity extends RoboFragmentActivity implements ImageViewerFragment.VisibilityToggler {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setHomeButtonEnabled(true);
+        getActionBar().setDisplayHomeAsUpEnabled(true);
+        getActionBar().setHomeButtonEnabled(true);
 
         if(savedInstanceState == null) {
             GalleryEntry entry = new Gson().fromJson(
@@ -52,13 +49,13 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
     @Override
     public void toggleVisibility(boolean hideUIDelayed){
         if(!lowProfile){
-            getSupportActionBar().hide();
+            getActionBar().hide();
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
                 uiHandler.postDelayed(hideTask, hideUIDelayed? 1000 : 0);
             }
         }
         else {
-            getSupportActionBar().show();
+            getActionBar().show();
             if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
                 //Remove callback in case this function was called before it could fire
                 uiHandler.removeCallbacks(hideTask);

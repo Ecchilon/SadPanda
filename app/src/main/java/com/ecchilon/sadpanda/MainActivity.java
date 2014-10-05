@@ -1,28 +1,25 @@
 package com.ecchilon.sadpanda;
 
 import android.content.Intent;
-import android.support.v4.view.MenuItemCompat;
-import android.support.v4.app.FragmentManager;
 import android.os.Bundle;
-import android.support.v7.widget.SearchView;
+import android.support.v4.app.FragmentManager;
+import android.widget.SearchView;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
 import com.ecchilon.sadpanda.auth.LoginFragment;
-import com.ecchilon.sadpanda.imageviewer.ImageViewerActivity;
-import com.ecchilon.sadpanda.imageviewer.ImageViewerFragment;
-import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.ecchilon.sadpanda.overview.OverviewFragment;
 import com.ecchilon.sadpanda.overview.SearchActivity;
-import com.google.gson.Gson;
 import com.google.inject.Inject;
 
+import roboguice.activity.RoboActivity;
+import roboguice.activity.RoboFragmentActivity;
 import roboguice.inject.ContentView;
 
 
 @ContentView(R.layout.activity_main)
-public class MainActivity extends RoboActionBarActivity implements
+public class MainActivity extends RoboFragmentActivity implements
         SearchView.OnQueryTextListener, LoginFragment.LoginListener {
 
     @Inject
@@ -36,13 +33,15 @@ public class MainActivity extends RoboActionBarActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setTitle(R.string.front_page);
 
-        if(mAuth.isLoggedIn()) {
-            showOverviewFragment();
-        }
-        else {
-            showErrorFragment();
-            showLoginFragment();
+        if(savedInstanceState == null) {
+            if (mAuth.isLoggedIn()) {
+                showOverviewFragment();
+            } else {
+                showErrorFragment();
+                showLoginFragment();
+            }
         }
     }
 
@@ -51,7 +50,7 @@ public class MainActivity extends RoboActionBarActivity implements
         getMenuInflater().inflate(R.menu.main, menu);
 
         mSearchItem = menu.findItem(R.id.action_search);
-        mSearchView = (SearchView) MenuItemCompat.getActionView(mSearchItem);
+        mSearchView = (SearchView) mSearchItem.getActionView();
         mSearchView.setQueryHint(getResources().getString(R.string.query_hint));
         mSearchView.setOnQueryTextListener(this);
 
@@ -78,8 +77,6 @@ public class MainActivity extends RoboActionBarActivity implements
             case R.id.login_menu:
                 showLoginFragment();
                 return true;
-            case R.id.action_settings:
-                return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -104,7 +101,7 @@ public class MainActivity extends RoboActionBarActivity implements
     public boolean onQueryTextSubmit(String s) {
         if(s.trim().length() > 0) {
             submitSearchQuery(s);
-            MenuItemCompat.collapseActionView(mSearchItem);
+            mSearchItem.collapseActionView();
             return true;
         }
         return false;

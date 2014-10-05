@@ -30,7 +30,7 @@
         </activity>
         <activity
             android:name=".imageviewer.ImageViewerActivity"
-            android:theme="@style/CustomActionBarTheme"/>
+            android:theme="@style/AppTheme.CustomActionBarTheme"/>
     </application>
 
 </manifest>

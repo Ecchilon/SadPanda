@@ -5,9 +5,6 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Created by Alex on 1/22/14.
  */
@@ -32,6 +29,6 @@ public class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
 
     @Override
     public int getCount() {
-        return entry.getFilecount();
+        return entry.getFileCount();
     }
 }
