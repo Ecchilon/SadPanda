@@ -3,7 +3,7 @@ package com.ecchilon.sadpanda;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
-import android.widget.SearchView;
+
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -11,27 +11,22 @@ import com.ecchilon.sadpanda.auth.ExhentaiAuth;
 import com.ecchilon.sadpanda.auth.LoginFragment;
 import com.ecchilon.sadpanda.overview.OverviewFragment;
 import com.ecchilon.sadpanda.overview.SearchActivity;
+import com.ecchilon.sadpanda.search.AbstractSearchActivity;
 import com.google.inject.Inject;
 
-import roboguice.activity.RoboActivity;
-import roboguice.activity.RoboFragmentActivity;
 import roboguice.inject.ContentView;
 
 
 @ContentView(R.layout.activity_main)
-public class MainActivity extends RoboFragmentActivity implements
-        SearchView.OnQueryTextListener, LoginFragment.LoginListener {
+public class MainActivity extends AbstractSearchActivity implements LoginFragment.LoginListener {
 
     @Inject
     private ExhentaiAuth mAuth;
 
-    private SearchView mSearchView;
-    private MenuItem mSearchItem;
-
     private LoginFragment mLoginFragment;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setTitle(R.string.front_page);
 
@@ -47,13 +42,8 @@ public class MainActivity extends RoboFragmentActivity implements
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(R.menu.main, menu);
-
-        mSearchItem = menu.findItem(R.id.action_search);
-        mSearchView = (SearchView) mSearchItem.getActionView();
-        mSearchView.setQueryHint(getResources().getString(R.string.query_hint));
-        mSearchView.setOnQueryTextListener(this);
-
         return true;
     }
 
@@ -97,39 +87,10 @@ public class MainActivity extends RoboFragmentActivity implements
         mLoginFragment = null;
     }
 
-    @Override
-    public boolean onQueryTextSubmit(String s) {
-        if(s.trim().length() > 0) {
-            submitSearchQuery(s);
-            mSearchItem.collapseActionView();
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public boolean onQueryTextChange(String s) {
-        if(s.trim().length() > 0) {
-            mSearchView.setSubmitButtonEnabled(true);
-        }
-        else {
-            mSearchView.setSubmitButtonEnabled(false);
-        }
-
-        return true;
-    }
-
-    private void submitSearchQuery(String query) {
-        Intent searchIntent = new Intent(this, SearchActivity.class);
-        searchIntent.putExtra(OverviewFragment.QUERY_KEY, query);
-
-        startActivity(searchIntent);
-    }
-
     private void showOverviewFragment() {
         FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction()
-                .replace(R.id.container, OverviewFragment.newInstance(null))
+                .replace(R.id.container, OverviewFragment.newInstance(getQuery()))
                 .commit();
     }
 
@@ -144,5 +105,14 @@ public class MainActivity extends RoboFragmentActivity implements
     public void onSuccess() {
         closeLoginFragment();
         showOverviewFragment();
+    }
+
+    @Override
+    public void onSearchSubmitted(String url, String query) {
+        Intent searchIntent = new Intent(this, SearchActivity.class);
+        searchIntent.putExtra(OverviewFragment.URL_KEY, url);
+        searchIntent.putExtra(OverviewFragment.QUERY_KEY, query);
+
+        startActivity(searchIntent);
     }
 }

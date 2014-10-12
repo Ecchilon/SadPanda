@@ -2,8 +2,8 @@
 
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
-        android:id="@+id/refresh"
+        android:id="@+id/refresh_menu"
         android:icon="@drawable/ic_action_refresh"
-        android:title="@string/refresh_menu"
-        android:showAsAction="ifRoom"/>
+        android:showAsAction="ifRoom"
+        android:title="@string/refresh_menu"/>
 </menu>

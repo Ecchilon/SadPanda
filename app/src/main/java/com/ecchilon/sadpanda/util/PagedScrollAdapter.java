@@ -12,7 +12,12 @@ import lombok.Getter;
 public abstract class PagedScrollAdapter<T> extends BaseAdapter implements
 		OnScrollListener {
 
-    private static final int DEFAULT_MAX_RELOADS = 3;
+    public interface PageLoadListener{
+        public void onPageLoadStart(int page);
+        public void onPageLoadEnd(int page);
+    }
+
+    public static final int DEFAULT_MAX_RELOADS = 3;
 
 	private boolean mLoadRequested = false;
 	private int mPreviousTotal = 0;
@@ -21,6 +26,8 @@ public abstract class PagedScrollAdapter<T> extends BaseAdapter implements
 
     private int mMaxReloads = DEFAULT_MAX_RELOADS;
     private int mReloadCount = 0;
+
+    private PageLoadListener mListener;
 
 	private List<T> mData;
 
@@ -78,7 +85,7 @@ public abstract class PagedScrollAdapter<T> extends BaseAdapter implements
 				&& ((firstVisibleItem + visibleItemCount) > totalItemCount - 1)) {
 			mLoadRequested = true;
             if(mAutoLoad) {
-                loadNewDataSet();
+                loadNewData();
             }
 		}
 
@@ -87,6 +94,10 @@ public abstract class PagedScrollAdapter<T> extends BaseAdapter implements
 	@Override
 	public void onScrollStateChanged(AbsListView view, int scrollState) {
 	}
+
+    public void setPageLoadListener(PageLoadListener listener) {
+        mListener = listener;
+    }
 
 	/***
 	 * 
@@ -109,9 +120,20 @@ public abstract class PagedScrollAdapter<T> extends BaseAdapter implements
 
 	/**
 	 * implement this function to retrieve any data you want add to the adapter.
-	 * Adding the data to the adapter should be done manually.
+	 * Adding the data to the adapter should be done manually by calling {@link #addPage}.
 	 */
-	public abstract void loadNewDataSet();
+	protected abstract void loadNewDataSet();
+
+    /**
+     * Triggers the load of new data based on the current page. Notifies any attached listeners.
+     */
+    public void loadNewData() {
+        if(mListener != null) {
+            mListener.onPageLoadStart(mCurrentPage);
+        }
+
+        loadNewDataSet();
+    }
 
 	/**
 	 * general method to return information to after loadNewDataSet() has been
@@ -127,10 +149,23 @@ public abstract class PagedScrollAdapter<T> extends BaseAdapter implements
 
 		mData.addAll(dataSet);
 		notifyDataSetChanged();
+
+        if(mListener != null) {
+            mListener.onPageLoadEnd(mCurrentPage);
+        }
+
 		mCurrentPage++;
 	}
 
     /**
+     * resets the adapter to page 0
+     */
+    public void reload() {
+        startFromPage(0);
+    }
+
+    /**
+     * Reloads the data and starts loading from the page indicated
      * @param page The page to start loading new data from
      */
 	public void startFromPage(int page) {
@@ -144,7 +179,7 @@ public abstract class PagedScrollAdapter<T> extends BaseAdapter implements
     public void setAutoLoad(boolean autoLoad) {
         //Set was requested but auto-load disabled
         if(mLoadRequested && !mAutoLoad && autoLoad) {
-            loadNewDataSet();
+            loadNewData();
         }
 
         mAutoLoad = autoLoad;

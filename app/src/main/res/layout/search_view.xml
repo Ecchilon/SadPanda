@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/small_margin"
+    android:visibility="invisible"
+    android:background="@android:color/white">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/small_header">
+        <LinearLayout
+            android:id="@+id/advanced_view"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            </LinearLayout>
+        </ScrollView>
+    <RelativeLayout
+        android:id="@+id/small_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+         android:paddingTop="@dimen/small_margin"
+        android:layout_alignParentBottom="true">
+        <ImageView
+            android:id="@+id/search_action"
+            android:src="@drawable/ic_action_send"
+            android:layout_width="@dimen/action_item_size"
+            android:layout_height="@dimen/action_item_size"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:padding="@dimen/small_margin"/>
+
+        <EditText
+            android:id="@+id/search_query"
+            android:hint="@string/query_hint"
+            android:inputType="textAutoComplete|textAutoCorrect"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/action_item_size"
+            android:layout_toStartOf="@id/search_action"
+            android:layout_toLeftOf="@id/search_action"
+            android:layout_alignTop="@id/search_action"
+            android:imeOptions="actionDone"/>
+
+        <View
+            android:visibility="gone"
+            android:id="@+id/search_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1px"
+            android:layout_below="@id/search_action"
+            android:layout_margin="@dimen/small_margin"
+            android:background="@color/actionbar_color"/>
+
+        <TextView
+            android:id="@+id/show_advanced"
+            android:text="@string/show_advanced"
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/action_item_size"
+            android:gravity="center"
+            android:layout_below="@id/search_divider"/>
+    </RelativeLayout>
+</RelativeLayout>

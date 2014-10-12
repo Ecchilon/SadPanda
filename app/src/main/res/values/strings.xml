@@ -15,6 +15,32 @@
     <string name="refresh_menu">Refresh</string>
     <string name="query_error">Error searching for this query</string>
     <string name="entries">entries</string>
-    <string name="spacer">-</string>
+    <string name="show_advanced">Show Advanced Search</string>
 
+    <string name="doujinshi">Doujinshi</string>
+    <string name="manga">Manga</string>
+    <string name="artist_cg">Artist CG</string>
+    <string name="game_cg">Game CG</string>
+    <string name="western">Western</string>
+    <string name="nonh">Non-H</string>
+    <string name="imageset">Image Set</string>
+    <string name="cosplay">Cosplay</string>
+    <string name="asianporn">Asian Porn</string>
+    <string name="misc">Misc</string>
+    <string name="star_count">Stars:</string>
+
+    <string name="by_name">By name</string>
+    <string name="by_tag">By tags</string>
+    <string name="by_desc">By description</string>
+    <string name="by_star">By stars</string>
+    <string name="by_expunged">By expunged</string>
+
+    <string-array name="star_count">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+    </string-array>
 </resources>

@@ -44,8 +44,8 @@
         android:layout_alignBottom="@id/thumb"
         android:layout_alignParentRight="true"
         android:layout_alignParentEnd="true"
-        android:layout_width="@dimen/content_type_size"
-        android:layout_height="@dimen/content_type_size"
+        android:layout_width="@dimen/small_category_size"
+        android:layout_height="@dimen/small_category_size"
         android:layout_marginLeft="@dimen/small_margin"
         android:layout_marginStart="@dimen/small_margin"
         android:src="@drawable/content_type"/>
