@@ -1,6 +1,8 @@
 package com.ecchilon.sadpanda.imageviewer;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.view.PagerAdapter;
@@ -79,10 +81,24 @@ public class ImageViewerFragment extends RoboFragment {
         ImageLoader loader = new ImageLoader(entry, getActivity());
 
         mPagerAdapter = new ScreenSlidePagerAdapter(
-                getActivity().getSupportFragmentManager(), loader, entry);
+                getActivity().getSupportFragmentManager(), loader, entry, createArguments());
         mPager.setAdapter(mPagerAdapter);
         mPager.setGestureDetector(new GestureDetector(getActivity(), new SingleTapListener()));
         mPager.setOffscreenPageLimit(5);
+    }
+
+    private Bundle createArguments() {
+        Bundle arguments = new Bundle();
+
+        SharedPreferences sharedPreferences = getActivity().getPreferences(Context.MODE_PRIVATE);
+
+        ImageScale scale = ImageScale.getScale(sharedPreferences.getString(getString(R.string.pref_image_scaling_key), null));
+        arguments.putSerializable(ScreenSlidePageFragment.IMAGE_SCALE_KEY, scale);
+
+        float maxZoom = Float.parseFloat(sharedPreferences.getString(getString(R.string.pref_max_zoom_key), "2.5"));
+        arguments.putFloat(ScreenSlidePageFragment.MAX_ZOOM_KEY, maxZoom);
+
+        return arguments;
     }
 
     private class SingleTapListener extends GestureDetector.SimpleOnGestureListener {

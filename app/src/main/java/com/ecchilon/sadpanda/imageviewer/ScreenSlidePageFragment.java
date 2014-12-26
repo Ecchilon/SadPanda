@@ -1,24 +1,22 @@
 package com.ecchilon.sadpanda.imageviewer;
 
+import android.graphics.Point;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.api.ApiErrorCode;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.RequestCreator;
-
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
 import uk.co.senab.photoview.PhotoView;
@@ -28,7 +26,9 @@ import uk.co.senab.photoview.PhotoView;
  */
 public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader.ImageListener, Callback {
 
-    public static final String MAX_SCALE_KEY = "ExhentaiMaxScale";
+    public static final String IMAGE_SCALE_KEY = "imageScaleKey";
+
+    public static final String MAX_ZOOM_KEY = "ExhentaiMaxScale";
 
     public static final float MAX_SCALE = 2.0f;
 
@@ -39,6 +39,8 @@ public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader
     @InjectView(R.id.failure_text)
 	private TextView failureText;
 
+    private ImageScale mImageScale = ImageScale.FIT_TO_SCREEN;
+
 	private ImageEntry mImageEntry;
     private float mMaxZoom = MAX_SCALE;
 
@@ -47,8 +49,14 @@ public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
 
-        if(getArguments() != null && getArguments().containsKey(MAX_SCALE_KEY)) {
-            mMaxZoom = getArguments().getFloat(MAX_SCALE_KEY);
+        if(getArguments() != null) {
+            if(getArguments().containsKey(MAX_ZOOM_KEY)) {
+                mMaxZoom = getArguments().getFloat(MAX_ZOOM_KEY);
+            }
+
+            if(getArguments().containsKey(IMAGE_SCALE_KEY)) {
+                mImageScale = (ImageScale) getArguments().getSerializable(IMAGE_SCALE_KEY);
+            }
         }
     }
 
@@ -100,6 +108,21 @@ public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader
             Log.d("ScreenSlidePageFragment", "Skipping cache for " + mImageEntry.getSrc());
             requestCreator.skipMemoryCache();
         }
+
+        switch (mImageScale) {
+            case DOUBLE:
+                Display display = getActivity().getWindowManager().getDefaultDisplay();
+                Point size = new Point();
+                display.getSize(size);
+                int width = size.x;
+                int height = size.y;
+                requestCreator.resize(width, height);
+                break;
+            case FIT_TO_SCREEN:
+                requestCreator.fit().centerInside();
+                break;
+        }
+
         requestCreator.into(mImageView, this);
     }
 

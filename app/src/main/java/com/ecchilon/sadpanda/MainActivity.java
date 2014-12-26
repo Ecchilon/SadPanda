@@ -11,6 +11,7 @@ import com.ecchilon.sadpanda.auth.ExhentaiAuth;
 import com.ecchilon.sadpanda.auth.LoginFragment;
 import com.ecchilon.sadpanda.overview.OverviewFragment;
 import com.ecchilon.sadpanda.overview.SearchActivity;
+import com.ecchilon.sadpanda.preferences.PandaPreferenceActivity;
 import com.ecchilon.sadpanda.search.AbstractSearchActivity;
 import com.google.inject.Inject;
 
@@ -67,9 +68,17 @@ public class MainActivity extends AbstractSearchActivity implements LoginFragmen
             case R.id.login_menu:
                 showLoginFragment();
                 return true;
+            case R.id.preferences:;
+                openPreferences();
+                return true;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void openPreferences() {
+        Intent preferences = new Intent(this, PandaPreferenceActivity.class);
+        startActivity(preferences);
     }
 
     private void showLoginFragment() {

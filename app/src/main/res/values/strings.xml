@@ -16,7 +16,6 @@
     <string name="query_error">Error searching for this query</string>
     <string name="entries">entries</string>
     <string name="show_advanced">Show Advanced Search</string>
-
     <string name="doujinshi">Doujinshi</string>
     <string name="manga">Manga</string>
     <string name="artist_cg">Artist CG</string>
@@ -28,12 +27,12 @@
     <string name="asianporn">Asian Porn</string>
     <string name="misc">Misc</string>
     <string name="star_count">Stars:</string>
-
     <string name="by_name">By name</string>
     <string name="by_tag">By tags</string>
     <string name="by_desc">By description</string>
     <string name="by_star">By stars</string>
     <string name="by_expunged">By expunged</string>
+    <string name="pref_image_scaling">Image Scaling</string>
 
     <string-array name="star_count">
         <item>0</item>
@@ -43,4 +42,12 @@
         <item>4</item>
         <item>5</item>
     </string-array>
+
+    <string name="title_activity_panda_preference">PandaPreferenceActivity</string>
+    <string name="action_settings">Settings</string>
+    <string name="pref_image_scaling_default">fit</string>
+    <string name="pref_image_scaling_key">pref_image_scaling</string>
+    <string name="pref_max_zoom">Max image zoom</string>
+    <string name="pref_max_zoom_key">max_image_zoom</string>
+    <string name="pref_max_zoom_default">2.5</string>
 </resources>

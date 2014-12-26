@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+	<ListPreference
+			android:key="@string/pref_image_scaling_key"
+			android:title="@string/pref_image_scaling"
+			android:dialogTitle="@string/pref_image_scaling"
+			android:entries="@array/pref_image_scaling_entries"
+			android:entryValues="@array/pref_image_scaling_values"
+			android:defaultValue="@string/pref_image_scaling_default" />
+	<ListPreference
+			android:key="@string/pref_max_zoom_key"
+	        android:title="@string/pref_max_zoom"
+	        android:dialogTitle="@string/pref_max_zoom"
+	        android:entries="@array/pref_max_zoom_entries"
+	        android:entryValues="@array/pref_max_zoom_entries"
+	        android:defaultValue="@string/pref_max_zoom_default"/>
+</PreferenceScreen>
