@@ -1,44 +1,37 @@
 package com.ecchilon.sadpanda.search;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+
 /**
  * Created by Alex on 7-10-2014.
  */
+@Accessors(chain = true)
 public class QueryObject {
-    private boolean mState;
-    protected final String mKey;
     protected final String mOnValue;
     protected final String mOffValue;
-    protected final int mNameId;
+
+    @Getter
+    @Setter
+    private boolean active;
+    @Getter
+    protected final String key;
+    @Getter
+    protected final int nameId;
 
     public QueryObject(String key, String onQuery, String offQuery, int nameId) {
-        mKey = key;
+        this.key = key;
         mOnValue = onQuery;
         mOffValue = offQuery;
-        this.mNameId = nameId;
-    }
-
-    public QueryObject set(boolean state) {
-        mState = state;
-        return this;
-    }
-
-    public boolean getState(){
-        return mState;
-    }
-
-    public String getKey() {
-        return mKey;
+        this.nameId = nameId;
     }
 
     public String getValue() {
-        return mState? mOnValue : mOffValue;
-    }
-
-    public int getNameId() {
-        return mNameId;
+        return active ? mOnValue : mOffValue;
     }
 
     public QueryObject copy() {
-        return new QueryObject(mKey, mOnValue, mOffValue, mNameId).set(mState);
+        return new QueryObject(key, mOnValue, mOffValue, nameId).setActive(active);
     }
 }

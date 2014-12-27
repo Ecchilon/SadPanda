@@ -1,6 +1,7 @@
 package com.ecchilon.sadpanda;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 
@@ -21,8 +22,14 @@ import roboguice.inject.ContentView;
 @ContentView(R.layout.activity_main)
 public class MainActivity extends AbstractSearchActivity implements LoginFragment.LoginListener {
 
+    public static final String DEFAULT_QUERY_KEY ="defaultQueryKey";
+    private static final String DEFAULT_QUERY_URL = "http://exhentai.org";
+
     @Inject
     private ExhentaiAuth mAuth;
+
+    @Inject
+    private SharedPreferences mPreferences;
 
     private LoginFragment mLoginFragment;
 
@@ -99,8 +106,12 @@ public class MainActivity extends AbstractSearchActivity implements LoginFragmen
     private void showOverviewFragment() {
         FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction()
-                .replace(R.id.container, OverviewFragment.newInstance(getQuery()))
+                .replace(R.id.container, OverviewFragment.newInstance(getDefaultQuery()))
                 .commit();
+    }
+
+    private String getDefaultQuery() {
+        return mPreferences.getString(DEFAULT_QUERY_KEY, DEFAULT_QUERY_URL);
     }
 
     private void showErrorFragment() {

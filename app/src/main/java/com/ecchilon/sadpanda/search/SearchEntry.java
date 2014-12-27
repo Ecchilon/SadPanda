@@ -53,11 +53,11 @@ public class SearchEntry extends RelativeLayout {
         queryBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                queryObject.set(isChecked);
+                queryObject.setActive(isChecked);
             }
         });
 
-        queryBox.setChecked(queryObject.getState());
+        queryBox.setChecked(queryObject.isActive());
     }
 
     public void setColor(int colorId) {

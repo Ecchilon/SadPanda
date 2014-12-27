@@ -5,6 +5,8 @@ import android.content.Context;
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.PersistentCookieStore;
 
@@ -24,14 +26,15 @@ public class ExhentaiModule extends AbstractModule {
 
     @Override
     protected void configure() {
+        bind(ExhentaiAuth.class).in(Singleton.class);
+    }
+
+    @Provides
+    private AsyncHttpClient getAsyncClient() {
         AsyncHttpClient httpClient = new AsyncHttpClient ();
 
         CookieStore cookieStore = new PersistentCookieStore(mContext);
         httpClient.setCookieStore(cookieStore);
-
-        ExhentaiAuth auth = new ExhentaiAuth(httpClient);
-
-        bind(AsyncHttpClient.class).toInstance(httpClient);
-        bind(ExhentaiAuth.class).toInstance(auth);
+        return httpClient;
     }
 }

@@ -17,7 +17,7 @@ public class CategoryObject extends QueryObject {
 
     @Override
     public CategoryObject copy() {
-        return (CategoryObject) new CategoryObject(mKey, mOnValue, mOffValue, color, mNameId)
-                .set(getState());
+        return (CategoryObject) new CategoryObject(key, mOnValue, mOffValue, color, nameId)
+                .setActive(isActive());
     }
 }

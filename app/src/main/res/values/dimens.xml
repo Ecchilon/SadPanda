@@ -15,4 +15,5 @@
     <dimen name="small_category_size">12dp</dimen>
     <dimen name="medium_category_size">18dp</dimen>
     <dimen name="floating_action_button">56dp</dimen>
+    <dimen name="advanced_height">400dp</dimen>
 </resources>
