@@ -36,7 +36,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
     public static final String URL_KEY = "ExhentaiURL";
     public static final String QUERY_KEY = "ExhentaiQuery";
 
-    @InjectView(android.R.id.list)
+    @InjectView(R.id.overview_list)
     private AbsListView mListView;
     @InjectView(R.id.swipe_container)
     private SwipeRefreshLayout mRefreshLayout;

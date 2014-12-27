@@ -40,8 +40,9 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     provided 'org.projectlombok:lombok:1.12.6'
-    compile 'com.google.inject:guice:4.0-beta:no_aop'
-    compile 'org.roboguice:roboguice:2.0'
+    provided 'org.roboguice:roboblender:3.0'
+    compile 'com.google.guava:guava:18.0'
+    compile 'org.roboguice:roboguice:3.0'
     compile 'com.loopj.android:android-async-http:1.4.5'
     compile 'com.android.support:support-v4:21.0.3'
     compile 'com.android.support:appcompat-v7:21.0.3'

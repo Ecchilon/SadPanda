@@ -8,13 +8,18 @@ import android.support.annotation.Nullable;
 import android.support.v4.view.PagerAdapter;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.bookmarks.BookmarkController;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.google.gson.Gson;
+import com.google.inject.Inject;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
 
@@ -43,12 +48,43 @@ public class ImageViewerFragment extends RoboFragment {
     @InjectView(R.id.pager)
     private GestureViewPager mPager;
 
-    /**
-     * The pager adapter, which provides the pages to the view pager widget.
-     */
-    private PagerAdapter mPagerAdapter;
+    @Inject
+    private BookmarkController mBookmarkController;
 
     private VisibilityToggler mVisibilityToggler;
+
+    private GalleryEntry mGalleryEntry;
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.gallery, menu);
+
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.bookmark).setEnabled(!mBookmarkController.hasBookmark(mGalleryEntry));
+
+        super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.bookmark:
+                mBookmarkController.addBookmark(mGalleryEntry);
+                return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -75,13 +111,13 @@ public class ImageViewerFragment extends RoboFragment {
 
         Gson gson = new Gson();
 
-        GalleryEntry entry = gson
+        mGalleryEntry = gson
                 .fromJson(getArguments().getString(GALLERY_ITEM_KEY), GalleryEntry.class);
 
-        ImageLoader loader = new ImageLoader(entry, getActivity());
+        ImageLoader loader = new ImageLoader(mGalleryEntry, getActivity());
 
-        mPagerAdapter = new ScreenSlidePagerAdapter(
-                getActivity().getSupportFragmentManager(), loader, entry, createArguments());
+        PagerAdapter mPagerAdapter = new ScreenSlidePagerAdapter(
+                getActivity().getSupportFragmentManager(), loader, mGalleryEntry, createArguments());
         mPager.setAdapter(mPagerAdapter);
         mPager.setGestureDetector(new GestureDetector(getActivity(), new SingleTapListener()));
         mPager.setOffscreenPageLimit(5);

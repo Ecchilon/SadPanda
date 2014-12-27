@@ -6,7 +6,7 @@
     tools:context="com.ecchilon.sadpanda.overview.OverviewFragment">
 
     <GridView
-        android:id="@android:id/list"
+        android:id="@+id/overview_list"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:numColumns="2" />

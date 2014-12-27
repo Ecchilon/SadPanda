@@ -51,4 +51,14 @@
     <string name="pref_max_zoom_key">max_image_zoom</string>
     <string name="pref_max_zoom_default">2.5</string>
     <string name="action_cancel">Cancel</string>
+    <string name="title_activity_main_activity2">MainActivity2</string>
+    <string name="title_section1">Front Page</string>
+    <string name="title_section2">Bookmarks</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="action_example">Example action</string>
+    <string name="remove_bookmark">Remove</string>
+    <string name="bookmark">Bookmark</string>
+    <string name="no_bookmarks">No bookmarks yet</string>
+
 </resources>

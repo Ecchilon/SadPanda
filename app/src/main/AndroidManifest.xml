@@ -6,6 +6,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
+        android:name=".SadPandaApp"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
@@ -38,5 +39,4 @@
             android:label="@string/title_activity_panda_preference" >
         </activity>
     </application>
-
 </manifest>

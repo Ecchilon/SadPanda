@@ -6,13 +6,10 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.MenuItem;
 import android.view.View;
-
 import com.ecchilon.sadpanda.R;
-import com.ecchilon.sadpanda.RoboActionBarActivity;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.google.gson.Gson;
-
-import roboguice.activity.RoboFragmentActivity;
+import roboguice.activity.RoboActionBarActivity;
 import roboguice.inject.ContentView;
 
 @ContentView(R.layout.activity_image)
