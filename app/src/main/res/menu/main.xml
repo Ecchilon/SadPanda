@@ -1,10 +1,17 @@
-<menu xmlns:android="http://schemas.android.com/apk/res/android"
-      xmlns:tools="http://schemas.android.com/tools"
-      tools:context=".MainActivity">
-	<item android:id="@+id/login_menu"
-	      android:title="@string/login_menu"
-	      android:showAsAction="never"/>
-	<item android:id="@+id/preferences"
-	      android:title="@string/action_settings"
-	      android:showAsAction="never"/>
+<menu
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	tools:context=".MainActivity"
+	>
+	<item
+		android:id="@+id/login_menu"
+		app:showAsAction="never"
+		android:title="@string/login_menu"
+		/>
+	<item
+		android:id="@+id/preferences"
+		app:showAsAction="never"
+		android:title="@string/action_settings"
+		/>
 </menu>

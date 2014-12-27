@@ -2,21 +2,23 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="@android:style/Theme.Holo.Light.DarkActionBar">
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="spbStyle">@style/PandaBar</item>
         <item name="android:actionBarStyle">@style/ActionBarStyle</item>
+        <item name="colorPrimary">@color/dark_gray</item>
+        <item name="colorAccent">@color/dark_gray</item>
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="ActionBarStyle" parent="@android:style/Widget.Holo.Light.ActionBar.Solid.Inverse">
-        <item name="android:background">@color/actionbar_color</item>
+    <style name="ActionBarStyle" parent="Widget.AppCompat.Light.ActionBar.Solid.Inverse">
+        <item name="android:background">@color/dark_gray</item>
         <item name="android:icon">@drawable/ic_action_icon</item>
     </style>
 
     <style name="AppTheme.CustomActionBarTheme" parent="AppTheme">
         <item name="android:windowActionBarOverlay">true</item>
         <item name="android:windowBackground">@color/black_overlay</item>
-        <!--<item name="android:windowIsTranslucent">true</item>-->
+        <item name="windowActionBarOverlay">true</item>
     </style>
 
     <style name="SwipeBackTheme" parent="AppTheme">

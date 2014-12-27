@@ -9,9 +9,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.DialogFragment;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.Button;
 import com.ecchilon.sadpanda.R;
-import roboguice.inject.InjectView;
 
 public class SearchDialogFragment extends DialogFragment {
 

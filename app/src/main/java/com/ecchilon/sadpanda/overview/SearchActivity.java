@@ -28,7 +28,7 @@ public class SearchActivity extends AbstractSearchActivity implements SwipeBackA
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         mHelper = new SwipeBackActivityHelper(this);
         mHelper.onActivityCreate();
 
@@ -84,7 +84,7 @@ public class SearchActivity extends AbstractSearchActivity implements SwipeBackA
     public void onSearchSubmitted(String url, String query) {
         Fragment fragment;
 
-        getActionBar().setTitle(query);
+        getSupportActionBar().setTitle(query);
 
         if(mExhentaiAuth.isLoggedIn()) {
             fragment = OverviewFragment.newInstance(url);

@@ -28,6 +28,7 @@
 			android:layout_height="@dimen/action_item_size"
 			android:layout_below="@id/search_query"
 			android:gravity="center"
+			style="?android:attr/borderlessButtonStyle"
 			android:text="@string/show_advanced"
 			/>
 	</RelativeLayout>

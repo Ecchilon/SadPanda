@@ -5,12 +5,13 @@ import android.view.MenuItem;
 
 import com.ecchilon.sadpanda.R;
 
+import com.ecchilon.sadpanda.RoboActionBarActivity;
 import roboguice.activity.RoboFragmentActivity;
 
 /**
  * Created by Alex on 11-10-2014.
  */
-public abstract class AbstractSearchActivity extends RoboFragmentActivity implements OnSearchSubmittedListener {
+public abstract class AbstractSearchActivity extends RoboActionBarActivity implements OnSearchSubmittedListener {
 
     private SearchDialogFragment fragment = null;
 

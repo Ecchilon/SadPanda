@@ -15,5 +15,6 @@
     <color name="search_normal">#42bd41</color>
     <color name="search_pressed">#259b24</color>
     <color name="subtitle_gray">#89000000</color>
-    <color name="actionbar_color">#FF4f535b</color>
+    <color name="dark_gray">#FF4f535b</color>
+    <color name="white">#FFF</color>
 </resources>
