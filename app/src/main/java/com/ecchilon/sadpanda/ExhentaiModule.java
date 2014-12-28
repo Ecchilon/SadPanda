@@ -25,8 +25,6 @@ public class ExhentaiModule extends AbstractModule {
 
     @Override
     protected void configure() {
-
-
         bind(ExhentaiAuth.class).in(Singleton.class);
         bind(BookmarkController.class).in(Singleton.class);
     }

@@ -1,11 +1,17 @@
 package com.ecchilon.sadpanda.imageviewer;
 
+import java.io.IOException;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.view.PagerAdapter;
+import android.util.Log;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -14,12 +20,12 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-
+import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.bookmarks.BookmarkController;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
-import com.google.gson.Gson;
 import com.google.inject.Inject;
+import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
 
@@ -33,10 +39,10 @@ public class ImageViewerFragment extends RoboFragment {
 
     public static final String GALLERY_ITEM_KEY = "ExhentaiGallery";
 
-    public static ImageViewerFragment newInstance(GalleryEntry entry) {
+    public static ImageViewerFragment newInstance(String entryString) {
         ImageViewerFragment fragment = new ImageViewerFragment();
         Bundle args = new Bundle();
-        args.putString(GALLERY_ITEM_KEY, new Gson().toJson(entry));
+        args.putString(GALLERY_ITEM_KEY, entryString);
         fragment.setArguments(args);
         return fragment;
     }
@@ -50,6 +56,9 @@ public class ImageViewerFragment extends RoboFragment {
 
     @Inject
     private BookmarkController mBookmarkController;
+
+    @Inject
+    private ObjectMapper mObjectMapper;
 
     private VisibilityToggler mVisibilityToggler;
 
@@ -70,7 +79,15 @@ public class ImageViewerFragment extends RoboFragment {
 
     @Override
     public void onPrepareOptionsMenu(Menu menu) {
-        menu.findItem(R.id.bookmark).setEnabled(!mBookmarkController.hasBookmark(mGalleryEntry));
+        MenuItem bookmark = menu.findItem(R.id.bookmark);
+        boolean isBookmarked = mBookmarkController.hasBookmark(mGalleryEntry);
+        bookmark.setEnabled(!isBookmarked);
+
+        if (isBookmarked) {
+            Drawable resIcon = getResources().getDrawable(R.drawable.ic_action_bookmark);
+            resIcon.mutate().setColorFilter(Color.GRAY, PorterDuff.Mode.MULTIPLY);
+            bookmark.setIcon(resIcon);
+        }
 
         super.onPrepareOptionsMenu(menu);
     }
@@ -79,7 +96,10 @@ public class ImageViewerFragment extends RoboFragment {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.bookmark:
-                mBookmarkController.addBookmark(mGalleryEntry);
+                if(mBookmarkController.addBookmark(mGalleryEntry)) {
+                    getActivity().invalidateOptionsMenu();
+                }
+
                 return true;
         }
 
@@ -109,10 +129,15 @@ public class ImageViewerFragment extends RoboFragment {
 
         mVisibilityToggler.toggleVisibility(false);
 
-        Gson gson = new Gson();
-
-        mGalleryEntry = gson
-                .fromJson(getArguments().getString(GALLERY_ITEM_KEY), GalleryEntry.class);
+        try {
+            mGalleryEntry = mObjectMapper.readValue(getArguments().getString(GALLERY_ITEM_KEY), GalleryEntry.class);
+        }
+        catch (IOException e) {
+            Toast.makeText(getActivity(), R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
+            Log.e("ImageViewerFragment", "Failed to parse gallery entry", e);
+            getActivity().finish();
+            return;
+        }
 
         ImageLoader loader = new ImageLoader(mGalleryEntry, getActivity());
 

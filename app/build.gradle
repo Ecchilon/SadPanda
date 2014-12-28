@@ -35,6 +35,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/ASL2.0'
+    }
 }
 
 dependencies {
@@ -48,7 +54,7 @@ dependencies {
     compile 'com.android.support:appcompat-v7:21.0.3'
     compile 'org.apache.commons:commons-lang3:3.1'
     compile 'com.squareup.picasso:picasso:2.3.4'
-    compile 'com.google.code.gson:gson:2.3'
+    compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.13'
     compile 'com.github.chrisbanes.photoview:library:1.2.2'
     compile 'com.loopeer.android.thirdparty:swipe-back-layout:1.0'
     compile 'com.github.castorflex.smoothprogressbar:library:1.0.0'

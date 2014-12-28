@@ -1,8 +1,11 @@
 package com.ecchilon.sadpanda.bookmarks;
 
+import java.io.IOException;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.internal.widget.AdapterViewCompat;
+import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -11,12 +14,13 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerActivity;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerFragment;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
-import com.google.gson.Gson;
 import com.google.inject.Inject;
+import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
 
@@ -30,6 +34,9 @@ public class BookmarkFragment extends RoboFragment implements AbsListView.OnItem
 
 	@Inject
 	private BookmarkController mBookmarkController;
+
+	@Inject
+	private ObjectMapper mObjectMapper;
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -56,7 +63,15 @@ public class BookmarkFragment extends RoboFragment implements AbsListView.OnItem
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 		Intent viewerIntent = new Intent(getActivity(), ImageViewerActivity.class);
-		viewerIntent.putExtra(ImageViewerFragment.GALLERY_ITEM_KEY, new Gson().toJson(parent.getItemAtPosition(position)));
+		try {
+			viewerIntent.putExtra(ImageViewerFragment.GALLERY_ITEM_KEY, mObjectMapper.writeValueAsString(
+					parent.getItemAtPosition(position)));
+		}
+		catch (IOException e) {
+			Toast.makeText(getActivity(), R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
+			Log.e("BookmarkFragment", "Failed to write gallery entry", e);
+			return;
+		}
 		startActivity(viewerIntent);
 	}
 
@@ -64,9 +79,10 @@ public class BookmarkFragment extends RoboFragment implements AbsListView.OnItem
 	public boolean onContextItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 			case 0:
-				AdapterViewCompat.AdapterContextMenuInfo info = (AdapterViewCompat.AdapterContextMenuInfo) item.getMenuInfo();
+				AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
 				GalleryEntry entry = (GalleryEntry) mBookmarksList.getItemAtPosition(info.position);
 				mBookmarkController.removeBookmark(entry);
+				mBookmarksList.setAdapter(new BookmarksAdapter(mBookmarkController.getBookmarks()));
 		}
 
 		return super.onContextItemSelected(item);

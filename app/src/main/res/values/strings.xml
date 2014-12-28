@@ -60,5 +60,8 @@
     <string name="remove_bookmark">Remove</string>
     <string name="bookmark">Bookmark</string>
     <string name="no_bookmarks">No bookmarks yet</string>
+    <string name="entry_parsing_failure">Something went wrong trying to open the gallery</string>
+    <string name="add_bookmark">Bookmark</string>
+    <string name="bookmarked">Bookmarked</string>
 
 </resources>

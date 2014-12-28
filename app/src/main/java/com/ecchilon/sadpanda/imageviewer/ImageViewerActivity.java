@@ -7,8 +7,6 @@ import android.os.Handler;
 import android.view.MenuItem;
 import android.view.View;
 import com.ecchilon.sadpanda.R;
-import com.ecchilon.sadpanda.overview.GalleryEntry;
-import com.google.gson.Gson;
 import roboguice.activity.RoboActionBarActivity;
 import roboguice.inject.ContentView;
 
@@ -23,12 +21,10 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
         getSupportActionBar().setHomeButtonEnabled(true);
 
         if(savedInstanceState == null) {
-            GalleryEntry entry = new Gson().fromJson(
-                    getIntent().getStringExtra(ImageViewerFragment.GALLERY_ITEM_KEY),
-                    GalleryEntry.class);
+            String entryString = getIntent().getStringExtra(ImageViewerFragment.GALLERY_ITEM_KEY);
 
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.container, ImageViewerFragment.newInstance(entry))
+                    .add(R.id.container, ImageViewerFragment.newInstance(entryString))
                     .commit();
         }
     }

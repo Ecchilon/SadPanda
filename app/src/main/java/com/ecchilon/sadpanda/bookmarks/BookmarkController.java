@@ -1,8 +1,8 @@
 package com.ecchilon.sadpanda.bookmarks;
 
-import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.List;
 
@@ -10,9 +10,9 @@ import android.content.Context;
 import android.util.Log;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.google.inject.Inject;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
 
 public class BookmarkController {
 
@@ -22,16 +22,18 @@ public class BookmarkController {
 	private Context mContext;
 
 	private List<GalleryEntry> mBookmarks;
+	private ObjectMapper mObjectMapper;
 
 	@Inject
-	public BookmarkController(Context context) {
+	public BookmarkController(Context context, ObjectMapper mapper) {
 		this.mContext = context;
+		this.mObjectMapper = mapper;
 
 		readBookmarks();
 	}
 
 	public boolean addBookmark(GalleryEntry entry) {
-		if(mBookmarks.contains(entry)) {
+		if (mBookmarks.contains(entry)) {
 			return false;
 		}
 
@@ -40,7 +42,7 @@ public class BookmarkController {
 	}
 
 	public boolean addBookmark(GalleryEntry entry, int index) {
-		if(mBookmarks.contains(entry)) {
+		if (mBookmarks.contains(entry)) {
 			return false;
 		}
 
@@ -63,12 +65,13 @@ public class BookmarkController {
 	private void readBookmarks() {
 		if (bookmarkFileExists()) {
 			try {
-				mBookmarks = new Gson().fromJson(new InputStreamReader(mContext.openFileInput(BOOKMARK_FILE)),
-						new TypeToken<List<GalleryEntry>>() {
-						}.getType());
+				mBookmarks = mObjectMapper.readValue(mContext.openFileInput(BOOKMARK_FILE),
+						new TypeReference<List<GalleryEntry>>() {
+						});
 			}
-			catch (FileNotFoundException e) {
-				Log.wtf(TAG, "File was not found even after checking it existed", e);
+			catch (Exception e) {
+				Log.e(TAG, "Error loading bookmarks file", e);
+				mBookmarks = Lists.newArrayList();
 			}
 		}
 		else {
@@ -77,12 +80,25 @@ public class BookmarkController {
 	}
 
 	private boolean writeBookmarks() {
+		OutputStreamWriter stream = null;
 		try {
-			new OutputStreamWriter(mContext.openFileOutput(BOOKMARK_FILE, Context.MODE_PRIVATE)).write(new Gson().toJson(mBookmarks));
+			stream = new OutputStreamWriter(mContext.openFileOutput(BOOKMARK_FILE, Context.MODE_PRIVATE));
+			String json = mObjectMapper.writeValueAsString(mBookmarks);
+			stream.write(json);
 		}
 		catch (IOException e) {
 			Log.e(TAG, "Error while writing bookmarks file", e);
 			return false;
+		}
+		finally {
+			if(stream != null) {
+				try {
+					stream.close();
+				}
+				catch (IOException e) {
+					Log.e(TAG, "Error while closing writing stream", e);
+				}
+			}
 		}
 
 		return true;
