@@ -18,38 +18,38 @@ import roboguice.RoboGuice;
  */
 public class OverviewAdapter extends PagedScrollAdapter<GalleryEntry> {
 
-    @Inject
-    private DataLoader mDataLoader;
+	@Inject
+	private DataLoader mDataLoader;
 
-    private final String mBaseUrl;
+	private final String mBaseUrl;
 
-    public OverviewAdapter(String url, Context context) {
-        this.mBaseUrl = url;
+	public OverviewAdapter(String url, Context context) {
+		this.mBaseUrl = url;
 
-        RoboGuice.getInjector(context).injectMembers(this);
-    }
+		RoboGuice.getInjector(context).injectMembers(this);
+	}
 
-    @Override
-    public void loadNewDataSet() {
-        final int currentPage = getCurrentPage();
-        new AsyncTask<String, Void, List<GalleryEntry>>() {
+	@Override
+	public void loadNewDataSet() {
+		final int currentPage = getCurrentPage();
+		new AsyncTask<String, Void, List<GalleryEntry>>() {
 
-            @Override
-            protected List<GalleryEntry> doInBackground(String... params) {
-                return mDataLoader.getGalleryIndex(params[0], currentPage);
-            }
+			@Override
+			protected List<GalleryEntry> doInBackground(String... params) {
+				return mDataLoader.getGalleryIndex(params[0], currentPage);
+			}
 
-            @Override
-            protected void onPostExecute(List<GalleryEntry> result) {
-                super.onPostExecute(result);
+			@Override
+			protected void onPostExecute(List<GalleryEntry> result) {
+				super.onPostExecute(result);
 
-                addPage(result);
-            }
-        }.execute(mBaseUrl);
-    }
+				addPage(result);
+			}
+		}.execute(mBaseUrl);
+	}
 
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
-        return createOverviewItem(getItem(position), convertView, parent);
-    }
+	@Override
+	public View getView(int position, View convertView, ViewGroup parent) {
+		return createOverviewItem(getItem(position), convertView, parent);
+	}
 }

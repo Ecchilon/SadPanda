@@ -10,29 +10,30 @@ import com.squareup.picasso.Target;
 import lombok.Getter;
 
 public class AnimatedTarget implements Target {
-    private final ImageView imageView;
-    @Getter
-    private final String url;
-    private Drawable placeHolder;
+	private final ImageView imageView;
+	@Getter
+	private final String url;
+	private Drawable placeHolder;
 
-    public AnimatedTarget(@NonNull ImageView imageView, String url) {
-        this.imageView = imageView;
-        this.url = url;
-    }
+	public AnimatedTarget(@NonNull ImageView imageView, String url) {
+		this.imageView = imageView;
+		this.url = url;
+	}
 
-    @Override
-    public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-        imageView.setImageDrawable(new CircularAnimatedDrawable(bitmap, placeHolder, from != Picasso.LoadedFrom.MEMORY));
-    }
+	@Override
+	public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
+		imageView.setImageDrawable(
+				new CircularAnimatedDrawable(bitmap, placeHolder, from != Picasso.LoadedFrom.MEMORY));
+	}
 
-    @Override
-    public void onBitmapFailed(Drawable errorDrawable) {
-        imageView.setImageDrawable(errorDrawable);
-    }
+	@Override
+	public void onBitmapFailed(Drawable errorDrawable) {
+		imageView.setImageDrawable(errorDrawable);
+	}
 
-    @Override
-    public void onPrepareLoad(Drawable placeHolderDrawable) {
-        placeHolder = placeHolderDrawable;
-        imageView.setImageDrawable(placeHolder);
-    }
+	@Override
+	public void onPrepareLoad(Drawable placeHolderDrawable) {
+		placeHolder = placeHolderDrawable;
+		imageView.setImageDrawable(placeHolder);
+	}
 }
