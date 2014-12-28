@@ -128,7 +128,6 @@ public class MainActivity extends AbstractSearchActivity implements LoginFragmen
 		}
 
 		mLoginFragment = new LoginFragment();
-		mLoginFragment.setLoginListener(this);
 		mLoginFragment.show(getSupportFragmentManager(), "LOGIN");
 	}
 
