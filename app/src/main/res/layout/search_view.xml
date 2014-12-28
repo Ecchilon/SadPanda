@@ -13,7 +13,7 @@
 		android:layout_alignParentTop="true"
 		>
 
-		<EditText
+		<com.ecchilon.sadpanda.search.HistoryEditText
 			android:id="@+id/search_query"
 			android:layout_width="match_parent"
 			android:layout_height="@dimen/action_item_size"
