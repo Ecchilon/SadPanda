@@ -5,11 +5,14 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
 import com.ecchilon.sadpanda.auth.LoginFragment;
+import com.ecchilon.sadpanda.bookmarks.BookmarkFragment;
 import com.ecchilon.sadpanda.overview.OverviewFragment;
 import com.ecchilon.sadpanda.overview.SearchActivity;
 import com.ecchilon.sadpanda.preferences.PandaPreferenceActivity;
@@ -20,119 +23,165 @@ import roboguice.inject.ContentView;
 
 
 @ContentView(R.layout.activity_main)
-public class MainActivity extends AbstractSearchActivity implements LoginFragment.LoginListener {
+public class MainActivity extends AbstractSearchActivity implements LoginFragment.LoginListener,
+        NavigationDrawerFragment.NavigationDrawerCallbacks {
 
-    public static final String DEFAULT_QUERY_KEY ="defaultQueryKey";
-    private static final String DEFAULT_QUERY_URL = "http://exhentai.org";
+	public static final String DEFAULT_QUERY_KEY = "defaultQueryKey";
+	private static final String DEFAULT_QUERY_URL = "http://exhentai.org";
 
-    @Inject
-    private ExhentaiAuth mAuth;
+	@Inject
+	private ExhentaiAuth mAuth;
 
-    @Inject
-    private SharedPreferences mPreferences;
+	@Inject
+	private SharedPreferences mPreferences;
 
-    private LoginFragment mLoginFragment;
+	private LoginFragment mLoginFragment;
 
-    @Override
-    protected void onCreate(final Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setTitle(R.string.front_page);
+	private NavigationDrawerFragment mNavigationDrawerFragment;
 
-        if(savedInstanceState == null) {
-            if (mAuth.isLoggedIn()) {
-                showOverviewFragment();
-            } else {
-                showErrorFragment();
-                showLoginFragment();
-            }
-        }
-    }
+	private CharSequence mTitle;
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
-        getMenuInflater().inflate(R.menu.main, menu);
-        return true;
-    }
+	@Override
+	protected void onCreate(final Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setTitle(R.string.front_page);
 
-    @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-        MenuItem login = menu.findItem(R.id.login_menu);
+		if (savedInstanceState == null) {
+			if (mAuth.isLoggedIn()) {
+				showOverviewFragment();
+			}
+			else {
+				showErrorFragment();
+				showLoginFragment();
+			}
+		}
 
-        if(mAuth.isLoggedIn()) {
-            login.setTitle(R.string.logout_menu);
-        }
-        else {
-            login.setTitle(R.string.login_menu);
-        }
+		mNavigationDrawerFragment = (NavigationDrawerFragment)
+				getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
+		mTitle = getTitle();
 
-        return true;
-    }
+		// Set up the drawer.
+		mNavigationDrawerFragment.setUp(
+				R.id.navigation_drawer,
+				(DrawerLayout) findViewById(R.id.drawer_layout));
+	}
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.login_menu:
-                showLoginFragment();
-                return true;
-            case R.id.preferences:;
-                openPreferences();
-                return true;
-        }
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		if (!mNavigationDrawerFragment.isDrawerOpen()) {
+			// Only show items in the action bar relevant to this screen
+			// if the drawer is not showing. Otherwise, let the drawer
+			// decide what to show in the action bar.
+			getMenuInflater().inflate(R.menu.main, menu);
+			restoreActionBar();
+			return super.onCreateOptionsMenu(menu);
+		}
+		return super.onCreateOptionsMenu(menu);
+	}
 
-        return super.onOptionsItemSelected(item);
-    }
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		MenuItem login = menu.findItem(R.id.login_menu);
 
-    private void openPreferences() {
-        Intent preferences = new Intent(this, PandaPreferenceActivity.class);
-        startActivity(preferences);
-    }
+		if(login == null) {
+			return true;
+		}
 
-    private void showLoginFragment() {
-        if(mLoginFragment != null) {
-            return;
-        }
+		if (mAuth.isLoggedIn()) {
+			login.setTitle(R.string.logout_menu);
+		}
+		else {
+			login.setTitle(R.string.login_menu);
+		}
 
-        mLoginFragment = new LoginFragment();
-        mLoginFragment.setLoginListener(this);
-        mLoginFragment.show(getSupportFragmentManager(), "LOGIN");
-    }
+		return true;
+	}
 
-    private void closeLoginFragment() {
-        mLoginFragment.dismiss();
-        mLoginFragment = null;
-    }
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+			case R.id.login_menu:
+				showLoginFragment();
+				return true;
+			case R.id.preferences:
+				openPreferences();
+				return true;
+		}
 
-    private void showOverviewFragment() {
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        fragmentManager.beginTransaction()
-                .replace(R.id.container, OverviewFragment.newInstance(getDefaultQuery()))
-                .commit();
-    }
+		return super.onOptionsItemSelected(item);
+	}
 
-    private String getDefaultQuery() {
-        return mPreferences.getString(DEFAULT_QUERY_KEY, DEFAULT_QUERY_URL);
-    }
+	private void openPreferences() {
+		Intent preferences = new Intent(this, PandaPreferenceActivity.class);
+		startActivity(preferences);
+	}
 
-    private void showErrorFragment() {
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        fragmentManager.beginTransaction()
-                .replace(R.id.container, ErrorFragment.newInstance(R.string.login_request))
-                .commit();
-    }
+	public void restoreActionBar() {
+		ActionBar actionBar = getSupportActionBar();
+		actionBar.setDisplayShowTitleEnabled(true);
+		actionBar.setTitle(mTitle);
+	}
 
-    @Override
-    public void onSuccess() {
-        closeLoginFragment();
-        showOverviewFragment();
-    }
+	private void showLoginFragment() {
+		if (mLoginFragment != null) {
+			return;
+		}
 
-    @Override
-    public void onSearchSubmitted(String url, String query) {
-        Intent searchIntent = new Intent(this, SearchActivity.class);
-        searchIntent.putExtra(OverviewFragment.URL_KEY, url);
-        searchIntent.putExtra(OverviewFragment.QUERY_KEY, query);
+		mLoginFragment = new LoginFragment();
+		mLoginFragment.setLoginListener(this);
+		mLoginFragment.show(getSupportFragmentManager(), "LOGIN");
+	}
 
-        startActivity(searchIntent);
-    }
+	private void closeLoginFragment() {
+		mLoginFragment.dismiss();
+		mLoginFragment = null;
+	}
+
+	private void showOverviewFragment() {
+		FragmentManager fragmentManager = getSupportFragmentManager();
+		fragmentManager.beginTransaction()
+				.replace(R.id.container, OverviewFragment.newInstance(getDefaultQuery()))
+				.commit();
+	}
+
+	@Override
+	public void onNavigationDrawerItemSelected(int position) {
+		switch (position) {
+			case 0:
+				showOverviewFragment();
+				break;
+			case 1:
+				FragmentManager fragmentManager = getSupportFragmentManager();
+				fragmentManager.beginTransaction()
+						.replace(R.id.container, new BookmarkFragment())
+						.commit();
+				break;
+		}
+	}
+
+	private String getDefaultQuery() {
+		return mPreferences.getString(DEFAULT_QUERY_KEY, DEFAULT_QUERY_URL);
+	}
+
+	private void showErrorFragment() {
+		FragmentManager fragmentManager = getSupportFragmentManager();
+		fragmentManager.beginTransaction()
+				.replace(R.id.container, ErrorFragment.newInstance(R.string.login_request))
+				.commit();
+	}
+
+	@Override
+	public void onSuccess() {
+		closeLoginFragment();
+		showOverviewFragment();
+	}
+
+	@Override
+	public void onSearchSubmitted(String url, String query) {
+		Intent searchIntent = new Intent(this, SearchActivity.class);
+		searchIntent.putExtra(OverviewFragment.URL_KEY, url);
+		searchIntent.putExtra(OverviewFragment.QUERY_KEY, query);
+
+		startActivity(searchIntent);
+	}
 }

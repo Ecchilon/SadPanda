@@ -2,11 +2,8 @@ package com.ecchilon.sadpanda.search;
 
 import android.view.Menu;
 import android.view.MenuItem;
-
 import com.ecchilon.sadpanda.R;
-
-import com.ecchilon.sadpanda.RoboActionBarActivity;
-import roboguice.activity.RoboFragmentActivity;
+import roboguice.activity.RoboActionBarActivity;
 
 /**
  * Created by Alex on 11-10-2014.

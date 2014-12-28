@@ -35,19 +35,26 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/ASL2.0'
+    }
 }
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     provided 'org.projectlombok:lombok:1.12.6'
-    compile 'com.google.inject:guice:4.0-beta:no_aop'
-    compile 'org.roboguice:roboguice:2.0'
+    provided 'org.roboguice:roboblender:3.0'
+    compile 'com.google.guava:guava:18.0'
+    compile 'org.roboguice:roboguice:3.0'
     compile 'com.loopj.android:android-async-http:1.4.5'
     compile 'com.android.support:support-v4:21.0.3'
     compile 'com.android.support:appcompat-v7:21.0.3'
     compile 'org.apache.commons:commons-lang3:3.1'
     compile 'com.squareup.picasso:picasso:2.3.4'
-    compile 'com.google.code.gson:gson:2.3'
+    compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.13'
     compile 'com.github.chrisbanes.photoview:library:1.2.2'
     compile 'com.loopeer.android.thirdparty:swipe-back-layout:1.0'
     compile 'com.github.castorflex.smoothprogressbar:library:1.0.0'

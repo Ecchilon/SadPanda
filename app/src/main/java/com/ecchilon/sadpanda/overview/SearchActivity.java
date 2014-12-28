@@ -17,7 +17,7 @@ import me.imid.swipebacklayout.lib.app.SwipeBackActivityBase;
 import me.imid.swipebacklayout.lib.app.SwipeBackActivityHelper;
 import roboguice.inject.ContentView;
 
-@ContentView(R.layout.activity_main)
+@ContentView(R.layout.activity_search)
 public class SearchActivity extends AbstractSearchActivity implements SwipeBackActivityBase {
 
     private SwipeBackActivityHelper mHelper;

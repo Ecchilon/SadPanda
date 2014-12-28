@@ -1,8 +1,12 @@
 package com.ecchilon.sadpanda.overview;
 
+import java.io.IOException;
+
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.util.Log;
+import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -12,119 +16,157 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ListAdapter;
-
+import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.bookmarks.BookmarkController;
+import com.ecchilon.sadpanda.bookmarks.BookmarksAdapter;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerActivity;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerFragment;
 import com.ecchilon.sadpanda.util.PagedScrollAdapter;
-import com.google.gson.Gson;
-
+import com.google.inject.Inject;
 import lombok.NonNull;
+import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
 
 /**
  * A fragment representing a list of Items.
- * <p />
- * Large screen devices (such as tablets) are supported by replacing the ListView
- * with a GridView.
- * <p />
+ * Large screen devices (such as tablets) are supported by replacing the ListView with a GridView.
  * interface.
  */
-public class OverviewFragment extends RoboFragment implements AbsListView.OnItemClickListener, SwipeRefreshLayout.OnRefreshListener, PagedScrollAdapter.PageLoadListener {
+public class OverviewFragment extends RoboFragment implements AbsListView.OnItemClickListener, SwipeRefreshLayout
+        .OnRefreshListener, PagedScrollAdapter.PageLoadListener {
 
-    public static final String URL_KEY = "ExhentaiURL";
-    public static final String QUERY_KEY = "ExhentaiQuery";
+	private static final int TOAST_TITLE_MAX_LENGTH = 50;
 
-    @InjectView(android.R.id.list)
-    private AbsListView mListView;
-    @InjectView(R.id.swipe_container)
-    private SwipeRefreshLayout mRefreshLayout;
+	public static final String URL_KEY = "ExhentaiURL";
+	public static final String QUERY_KEY = "ExhentaiQuery";
 
-    private OverviewAdapter mAdapter;
+	@InjectView(R.id.overview_list)
+	private AbsListView mListView;
+	@InjectView(R.id.swipe_container)
+	private SwipeRefreshLayout mRefreshLayout;
 
-    public static OverviewFragment newInstance(@NonNull String url) {
-        OverviewFragment fragment = new OverviewFragment();
-        if(url != null) {
-            Bundle args = new Bundle();
-            args.putString(URL_KEY, url);
-            fragment.setArguments(args);
-        }
+	private OverviewAdapter mAdapter;
 
-        return fragment;
-    }
+	@Inject
+	private ObjectMapper mObjectMapper;
 
-    public OverviewFragment() {
-    }
+	@Inject
+	private BookmarkController mBookmarkController;
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setRetainInstance(true);
-        setHasOptionsMenu(true);
-    }
+	public static OverviewFragment newInstance(@NonNull String url) {
+		OverviewFragment fragment = new OverviewFragment();
+		if (url != null) {
+			Bundle args = new Bundle();
+			args.putString(URL_KEY, url);
+			fragment.setArguments(args);
+		}
 
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        super.onCreateOptionsMenu(menu, inflater);
+		return fragment;
+	}
 
-        inflater.inflate(R.menu.overview, menu);
-    }
+	public OverviewFragment() {
+	}
 
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_gallery_entry, container, false);
-    }
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setRetainInstance(true);
+		setHasOptionsMenu(true);
+	}
 
-    @Override
-    public void onViewCreated(View view, Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		super.onCreateOptionsMenu(menu, inflater);
 
-        String query = getArguments().getString(URL_KEY);
+		inflater.inflate(R.menu.overview, menu);
+	}
 
-        mAdapter = new OverviewAdapter(query, getActivity());
-        mAdapter.setPageLoadListener(this);
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		return inflater.inflate(R.layout.fragment_gallery_entry, container, false);
+	}
 
-        ((AdapterView<ListAdapter>) mListView).setAdapter(mAdapter);
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
 
-        mListView.setEmptyView(view.findViewById(android.R.id.empty));
-        mListView.setOnItemClickListener(this);
-        mListView.setOnScrollListener(mAdapter);
+		String query = getArguments().getString(URL_KEY);
 
-        mRefreshLayout.setOnRefreshListener(this);
-    }
+		mAdapter = new OverviewAdapter(query, getActivity());
+		mAdapter.setPageLoadListener(this);
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.refresh_menu:
-                mAdapter.reload();
-                break;
-        }
+		mListView.setAdapter(mAdapter);
 
-        return super.onOptionsItemSelected(item);
-    }
+		mListView.setEmptyView(view.findViewById(android.R.id.empty));
+		mListView.setOnItemClickListener(this);
+		mListView.setOnScrollListener(mAdapter);
+		registerForContextMenu(mListView);
+		mRefreshLayout.setOnRefreshListener(this);
+	}
 
-    @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        Intent viewerIntent = new Intent(getActivity(), ImageViewerActivity.class);
-        viewerIntent.putExtra(ImageViewerFragment.GALLERY_ITEM_KEY, new Gson().toJson(mAdapter.getItem(position)));
-        startActivity(viewerIntent);
-    }
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+			case R.id.refresh_menu:
+				mAdapter.reload();
+				break;
+		}
 
-    @Override
-    public void onRefresh() {
-        mAdapter.reload();
-    }
+		return super.onOptionsItemSelected(item);
+	}
 
-    @Override
-    public void onPageLoadStart(int page) {
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
+		if (v == mListView) {
+			int position = ((AdapterView.AdapterContextMenuInfo)menuInfo).position;
+			GalleryEntry entry = mAdapter.getItem(position);
+			menu.add(0, 0, 0, R.string.add_bookmark).setEnabled(!mBookmarkController.hasBookmark(entry));
+		}
+	}
 
-    }
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+			case 0:
+				AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+				GalleryEntry entry = mAdapter.getItem(info.position);
+				mBookmarkController.addBookmark(entry);
+		}
 
-    @Override
-    public void onPageLoadEnd(int page) {
-        mRefreshLayout.setRefreshing(false);
-    }
+		return super.onContextItemSelected(item);
+	}
+
+	@Override
+	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+		Intent viewerIntent = new Intent(getActivity(), ImageViewerActivity.class);
+		try {
+			viewerIntent.putExtra(ImageViewerFragment.GALLERY_ITEM_KEY, mObjectMapper.writeValueAsString(
+					mAdapter.getItem(position)));
+		}
+		catch (IOException e) {
+			Toast.makeText(getActivity(), R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
+			Log.e("BookmarkFragment", "Failed to write gallery entry", e);
+			return;
+		}
+		startActivity(viewerIntent);
+	}
+
+	@Override
+	public void onRefresh() {
+		mAdapter.reload();
+	}
+
+	@Override
+	public void onPageLoadStart(int page) {
+
+	}
+
+	@Override
+	public void onPageLoadEnd(int page) {
+		mRefreshLayout.setRefreshing(false);
+	}
 }

@@ -1,14 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <!-- Default screen margins, per the Android Design guidelines. -->
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
-
     <dimen name="tiny_margin">4dp</dimen>
     <dimen name="small_margin">8dp</dimen>
     <dimen name="medium_margin">16dp</dimen>
-
     <dimen name="action_item_size">48dp</dimen>
-
     <dimen name="progress_bar_size">48dp</dimen>
     <dimen name="thumb_size">64dp</dimen>
     <dimen name="empty_view_size">72dp</dimen>
@@ -16,4 +15,6 @@
     <dimen name="medium_category_size">18dp</dimen>
     <dimen name="floating_action_button">56dp</dimen>
     <dimen name="advanced_height">400dp</dimen>
+    <dimen name="navigation_drawer_width">240dp</dimen>
+
 </resources>
