@@ -26,129 +26,126 @@ import uk.co.senab.photoview.PhotoView;
  */
 public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader.ImageListener, Callback {
 
-    public static final String IMAGE_SCALE_KEY = "imageScaleKey";
+	public static final String IMAGE_SCALE_KEY = "imageScaleKey";
 
-    public static final String MAX_ZOOM_KEY = "ExhentaiMaxScale";
+	public static final String MAX_ZOOM_KEY = "ExhentaiMaxScale";
 
-    public static final float MAX_SCALE = 2.0f;
+	public static final float MAX_SCALE = 2.0f;
 
-    @InjectView(R.id.image_view)
+	@InjectView(R.id.image_view)
 	private PhotoView mImageView;
-    @InjectView(R.id.loading_view)
+	@InjectView(R.id.loading_view)
 	private ProgressBar loadingBar;
-    @InjectView(R.id.failure_text)
+	@InjectView(R.id.failure_text)
 	private TextView failureText;
 
-    private ImageScale mImageScale = ImageScale.FIT_TO_SCREEN;
+	private ImageScale mImageScale = ImageScale.FIT_TO_SCREEN;
 
 	private ImageEntry mImageEntry;
-    private float mMaxZoom = MAX_SCALE;
+	private float mMaxZoom = MAX_SCALE;
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setHasOptionsMenu(true);
 
-        if(getArguments() != null) {
-            if(getArguments().containsKey(MAX_ZOOM_KEY)) {
-                mMaxZoom = getArguments().getFloat(MAX_ZOOM_KEY);
-            }
+		if (getArguments() != null) {
+			if (getArguments().containsKey(MAX_ZOOM_KEY)) {
+				mMaxZoom = getArguments().getFloat(MAX_ZOOM_KEY);
+			}
 
-            if(getArguments().containsKey(IMAGE_SCALE_KEY)) {
-                mImageScale = (ImageScale) getArguments().getSerializable(IMAGE_SCALE_KEY);
-            }
-        }
-    }
+			if (getArguments().containsKey(IMAGE_SCALE_KEY)) {
+				mImageScale = (ImageScale) getArguments().getSerializable(IMAGE_SCALE_KEY);
+			}
+		}
+	}
 
-    @Override
+	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 		return inflater.inflate(R.layout.fragment_single_image, container, false);
 	}
 
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        super.onCreateOptionsMenu(menu, inflater);
+	@Override
+	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+		super.onCreateOptionsMenu(menu, inflater);
 
-        inflater.inflate(R.menu.image, menu);
-    }
+		inflater.inflate(R.menu.image, menu);
+	}
 
-    @Override
-    public void onViewCreated(View view, Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+	@Override
+	public void onViewCreated(View view, Bundle savedInstanceState) {
+		super.onViewCreated(view, savedInstanceState);
 
-        mImageView.setMaximumScale(mMaxZoom);
+		mImageView.setMaximumScale(mMaxZoom);
 
-        if (mImageEntry != null && mImageEntry.getSrc() != null) {
-            loadImage(true);
-        }
-    }
+		if (mImageEntry != null && mImageEntry.getSrc() != null) {
+			loadImage();
+		}
+	}
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.refresh:
-                loadImage(false);
-                return true;
-        }
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+			case R.id.refresh:
+				loadImage();
+				return true;
+		}
 
-        return super.onOptionsItemSelected(item);
-    }
+		return super.onOptionsItemSelected(item);
+	}
 
-    private void loadImage(boolean cache) {
-        loadingBar.setVisibility(View.VISIBLE);
-        failureText.setVisibility(View.GONE);
+	private void loadImage() {
+		loadingBar.setVisibility(View.VISIBLE);
+		failureText.setVisibility(View.GONE);
 
-        if(mImageEntry == null || mImageEntry.getSrc() == null) {
-            return;
-        }
+		if (mImageEntry == null || mImageEntry.getSrc() == null) {
+			return;
+		}
 
-        RequestCreator requestCreator =Picasso.with(getActivity()).load(mImageEntry.getSrc());
-        if(!cache) {
-            Log.d("ScreenSlidePageFragment", "Skipping cache for " + mImageEntry.getSrc());
-            requestCreator.skipMemoryCache();
-        }
+		RequestCreator requestCreator = Picasso.with(getActivity()).load(mImageEntry.getSrc());
+		requestCreator.skipMemoryCache();
 
-        switch (mImageScale) {
-            case DOUBLE:
-                Display display = getActivity().getWindowManager().getDefaultDisplay();
-                Point size = new Point();
-                display.getSize(size);
-                int width = size.x;
-                int height = size.y;
-                requestCreator.resize(width, height);
-                break;
-            case FIT_TO_SCREEN:
-                requestCreator.fit().centerInside();
-                break;
-        }
+		switch (mImageScale) {
+			case DOUBLE:
+				Display display = getActivity().getWindowManager().getDefaultDisplay();
+				Point size = new Point();
+				display.getSize(size);
+				int width = size.x;
+				int height = size.y;
+				requestCreator.resize(width, height);
+				break;
+			case FIT_TO_SCREEN:
+				requestCreator.fit().centerInside();
+				break;
+		}
 
-        requestCreator.into(mImageView, this);
-    }
+		requestCreator.into(mImageView, this);
+	}
 
-    @Override
-    public void onLoad(ImageEntry entry) {
-        mImageEntry = entry;
+	@Override
+	public void onLoad(ImageEntry entry) {
+		mImageEntry = entry;
 
-        if (mImageView != null && mImageEntry != null && mImageEntry.getSrc() != null) {
-            loadImage(true);
-        }
-    }
+		if (mImageView != null && mImageEntry != null && mImageEntry.getSrc() != null) {
+			loadImage();
+		}
+	}
 
-    @Override
-    public void onSuccess() {
-        loadingBar.setVisibility(View.GONE);
-    }
+	@Override
+	public void onSuccess() {
+		loadingBar.setVisibility(View.GONE);
+	}
 
-    @Override
-    public void onError() {
-        failureText.setVisibility(View.VISIBLE);
-        loadingBar.setVisibility(View.GONE);
-    }
+	@Override
+	public void onError() {
+		failureText.setVisibility(View.VISIBLE);
+		loadingBar.setVisibility(View.GONE);
+	}
 
-    @Override
-    public void onError(ApiErrorCode code) {
-        failureText.setVisibility(View.VISIBLE);
-        Log.e("ScreenSlidePageFragment", code.name());
-    }
+	@Override
+	public void onError(ApiErrorCode code) {
+		failureText.setVisibility(View.VISIBLE);
+		Log.e("ScreenSlidePageFragment", code.name());
+	}
 }
