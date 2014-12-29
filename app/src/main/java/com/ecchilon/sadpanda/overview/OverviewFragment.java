@@ -170,6 +170,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	public void onRefresh() {
 		mAdapter.removeAllItems();
 		mListView.setHasMoreItems(true);
+		mCurrentPage = 0;
 	}
 
 	@Override
