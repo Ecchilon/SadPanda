@@ -16,7 +16,7 @@
 		<com.ecchilon.sadpanda.search.HistoryEditText
 			android:id="@+id/search_query"
 			android:layout_width="match_parent"
-			android:layout_height="@dimen/action_item_size"
+			android:layout_height="@dimen/item_size"
 			android:hint="@string/query_hint"
 			android:imeOptions="actionDone"
 			android:inputType="textAutoComplete|textAutoCorrect"
@@ -25,7 +25,7 @@
 		<Button
 			android:id="@+id/show_advanced"
 			android:layout_width="match_parent"
-			android:layout_height="@dimen/action_item_size"
+			android:layout_height="@dimen/item_size"
 			android:layout_below="@id/search_query"
 			android:gravity="center"
 			style="?android:attr/borderlessButtonStyle"

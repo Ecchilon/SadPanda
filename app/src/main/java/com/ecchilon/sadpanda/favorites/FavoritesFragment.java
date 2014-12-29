@@ -5,10 +5,8 @@ import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import com.astuetz.PagerSlidingTabStrip;
 import com.ecchilon.sadpanda.R;
-import com.google.inject.Inject;
-import com.viewpagerindicator.TabPageIndicator;
-import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
 
@@ -17,8 +15,8 @@ public class FavoritesFragment extends RoboFragment {
 	@InjectView(R.id.pager)
 	private ViewPager mFavoritesPager;
 
-	@InjectView(R.id.tab_page)
-	private TabPageIndicator mTabPage;
+	@InjectView(R.id.tabs)
+	private PagerSlidingTabStrip mTabPage;
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -34,5 +32,6 @@ public class FavoritesFragment extends RoboFragment {
 		mFavoritesPager.setAdapter(adapter);
 
 		mTabPage.setViewPager(mFavoritesPager);
+		mTabPage.setTextColorResource(R.color.white);
 	}
 }

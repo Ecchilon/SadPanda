@@ -1,18 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
-
+<resources>
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <item name="spbStyle">@style/PandaBar</item>
         <item name="android:actionBarStyle">@style/ActionBarStyle</item>
         <item name="colorPrimary">@color/dark_gray</item>
         <item name="colorAccent">@color/dark_gray</item>
-        <item name="vpiTabPageIndicatorStyle">@style/AppTheme.TabPageIndicator</item>
         <!-- Customize your theme here. -->
     </style>
 
-    <style name="AppTheme.TabPageIndicator" parent="Widget.TabPageIndicator">
-
+    <style name="AppTheme.PagerSlidingTabStrip">
+        <item name="pstsIndicatorColor">@color/white</item>
+        <item name="pstsDividerColor">@color/dark_gray</item>
+        <item name="pstsIndicatorHeight">@dimen/small_margin</item>
+        <item name="pstsTabPaddingLeftRight">@dimen/small_margin</item>
+        <item name="pstsUnderlineHeight">0dp</item>
+        <item name="android:background">@color/dark_gray</item>
     </style>
 
     <style name="ActionBarStyle" parent="Widget.AppCompat.Light.ActionBar.Solid.Inverse">

@@ -5,11 +5,11 @@
 	android:orientation="vertical"
 	>
 
-	<com.viewpagerindicator.TabPageIndicator
-		android:id="@+id/tab_page"
+	<com.astuetz.PagerSlidingTabStrip
+		android:id="@+id/tabs"
+		style="@style/AppTheme.PagerSlidingTabStrip"
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		/>
+		android:layout_height="@dimen/item_size" />
 
 	<android.support.v4.view.ViewPager
 		android:id="@+id/pager"
