@@ -58,4 +58,5 @@ dependencies {
     compile 'com.github.chrisbanes.photoview:library:1.2.3'
     compile 'com.loopeer.android.thirdparty:swipe-back-layout:1.0'
     compile 'com.github.castorflex.smoothprogressbar:library:1.0.0'
+    compile 'com.github.nicolasjafelle:paginglistview:1.1'
 }

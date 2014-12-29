@@ -1,10 +1,13 @@
 package com.ecchilon.sadpanda.overview;
 
 import java.io.IOException;
+import java.util.List;
 
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -15,36 +18,36 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
-import android.widget.ListAdapter;
 import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.api.ApiCallException;
+import com.ecchilon.sadpanda.api.DataLoader;
 import com.ecchilon.sadpanda.bookmarks.BookmarkController;
-import com.ecchilon.sadpanda.bookmarks.BookmarksAdapter;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerActivity;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerFragment;
-import com.ecchilon.sadpanda.util.PagedScrollAdapter;
+import com.ecchilon.sadpanda.util.AsyncTaskResult;
 import com.google.inject.Inject;
+import com.paging.listview.PagingListView;
 import lombok.NonNull;
-import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
 
 /**
- * A fragment representing a list of Items.
- * Large screen devices (such as tablets) are supported by replacing the ListView with a GridView.
- * interface.
+ * A fragment representing a list of Items. Large screen devices (such as tablets) are supported by replacing the
+ * ListView with a GridView. interface.
  */
 public class OverviewFragment extends RoboFragment implements AbsListView.OnItemClickListener, SwipeRefreshLayout
-        .OnRefreshListener, PagedScrollAdapter.PageLoadListener {
+		.OnRefreshListener, PagingListView.Pagingable {
 
+	private static final int GALLERY_BATCH_SIZE = 25;
 	private static final int TOAST_TITLE_MAX_LENGTH = 50;
 
 	public static final String URL_KEY = "ExhentaiURL";
 	public static final String QUERY_KEY = "ExhentaiQuery";
 
 	@InjectView(R.id.overview_list)
-	private AbsListView mListView;
+	private PagingListView mListView;
 	@InjectView(R.id.swipe_container)
 	private SwipeRefreshLayout mRefreshLayout;
 
@@ -55,6 +58,13 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 	@Inject
 	private BookmarkController mBookmarkController;
+
+	@Inject
+	private DataLoader mDataLoader;
+
+	private String mQueryUrl;
+
+	private int mCurrentPage = 0;
 
 	public static OverviewFragment newInstance(@NonNull String url) {
 		OverviewFragment fragment = new OverviewFragment();
@@ -75,6 +85,8 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		super.onCreate(savedInstanceState);
 		setRetainInstance(true);
 		setHasOptionsMenu(true);
+
+		mQueryUrl = getArguments().getString(URL_KEY);
 	}
 
 	@Override
@@ -87,23 +99,22 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
-		return inflater.inflate(R.layout.fragment_gallery_entry, container, false);
+		return inflater.inflate(R.layout.fragment_overview_gallery, container, false);
 	}
 
 	@Override
 	public void onViewCreated(View view, Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 
-		String query = getArguments().getString(URL_KEY);
-
-		mAdapter = new OverviewAdapter(query, getActivity());
-		mAdapter.setPageLoadListener(this);
+		mAdapter = new OverviewAdapter();
 
 		mListView.setAdapter(mAdapter);
-
+		mListView.setHasMoreItems(true);
 		mListView.setEmptyView(view.findViewById(android.R.id.empty));
 		mListView.setOnItemClickListener(this);
-		mListView.setOnScrollListener(mAdapter);
+		mListView.setPagingableListener(this);
+		mListView.setOnScrollListener(new PagedOnScrollListener());
+
 		registerForContextMenu(mListView);
 		mRefreshLayout.setOnRefreshListener(this);
 	}
@@ -112,8 +123,8 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 			case R.id.refresh_menu:
-				mAdapter.reload();
-				break;
+				onRefresh();
+				return true;
 		}
 
 		return super.onOptionsItemSelected(item);
@@ -122,7 +133,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
 		if (v == mListView) {
-			int position = ((AdapterView.AdapterContextMenuInfo)menuInfo).position;
+			int position = ((AdapterView.AdapterContextMenuInfo) menuInfo).position;
 			GalleryEntry entry = mAdapter.getItem(position);
 			menu.add(0, 0, 0, R.string.add_bookmark).setEnabled(!mBookmarkController.hasBookmark(entry));
 		}
@@ -157,16 +168,68 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 	@Override
 	public void onRefresh() {
-		mAdapter.reload();
+		mAdapter.removeAllItems();
+		mListView.setHasMoreItems(true);
 	}
 
 	@Override
-	public void onPageLoadStart(int page) {
+	public void onLoadMoreItems() {
+		new AsyncTask<Void, Void, AsyncTaskResult<List<GalleryEntry>>>() {
 
+			@Override
+			protected AsyncTaskResult<List<GalleryEntry>>
+
+			doInBackground(Void... params) {
+				try {
+					List<GalleryEntry> result = mDataLoader.getGalleryIndex(mQueryUrl, mCurrentPage++);
+					return new AsyncTaskResult<List<GalleryEntry>>(result);
+				}
+				catch (ApiCallException e) {
+					return new AsyncTaskResult<List<GalleryEntry>>(e);
+				}
+			}
+
+			@Override
+			protected void onPostExecute(AsyncTaskResult<List<GalleryEntry>> entryList) {
+				super.onPostExecute(entryList);
+
+				mRefreshLayout.setRefreshing(false);
+
+				if (entryList.isSuccessful()) {
+					mListView.onFinishLoading(entryList.getResult().size() >= GALLERY_BATCH_SIZE,
+							entryList.getResult());
+				}
+
+				//TODO show reload for page on failure
+			}
+		}.execute();
 	}
 
-	@Override
-	public void onPageLoadEnd(int page) {
-		mRefreshLayout.setRefreshing(false);
+	private class PagedOnScrollListener implements AbsListView.OnScrollListener {
+
+		private int mCurrentDisplayedPage = -1;
+		private final String mSubTitle;
+
+		private PagedOnScrollListener() {
+			mSubTitle = getString(R.string.current_page) + " ";
+		}
+
+
+		@Override
+		public void onScrollStateChanged(AbsListView view, int scrollState) {
+
+		}
+
+		@Override
+		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+			//assumes GALLERY_BATCH_SIZE items for each page to determine current subtitle
+
+			int newDisplayedPage = firstVisibleItem / GALLERY_BATCH_SIZE;
+
+			if(newDisplayedPage != mCurrentDisplayedPage) {
+				mCurrentDisplayedPage = newDisplayedPage;
+				((ActionBarActivity)getActivity()).getSupportActionBar().setSubtitle(mSubTitle + (mCurrentDisplayedPage + 1));
+			}
+		}
 	}
 }

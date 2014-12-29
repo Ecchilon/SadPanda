@@ -63,5 +63,6 @@
     <string name="entry_parsing_failure">Something went wrong trying to open the gallery</string>
     <string name="add_bookmark">Bookmark</string>
     <string name="bookmarked">Bookmarked</string>
+    <string name="current_page">page</string>
 
 </resources>

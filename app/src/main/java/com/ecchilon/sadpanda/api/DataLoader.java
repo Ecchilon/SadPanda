@@ -35,6 +35,7 @@ import roboguice.util.Strings;
 
 /**
  * Created by SkyArrow on 2014/2/19.
+ * @author alex on 2014/9/23.
  */
 public class DataLoader {
     public static final int PHOTO_PER_PAGE = 40;

@@ -4,6 +4,7 @@ import lombok.Getter;
 
 /**
  * Created by SkyArrow on 2014/2/19.
+ * @author alex on 2014/9/23.
  */
 public enum ApiErrorCode {
     GALLERY_NOT_EXIST(1),
