@@ -43,6 +43,8 @@ import roboguice.inject.InjectView;
 public class OverviewFragment extends RoboFragment implements AbsListView.OnItemClickListener, SwipeRefreshLayout
 		.OnRefreshListener, PagingListView.Pagingable {
 
+	private static final String TAG = "OverviewFragment";
+
 	public enum SearchType {
 		NONE,
 		SIMPLE,
@@ -220,7 +222,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		}
 		catch (IOException e) {
 			Toast.makeText(getActivity(), R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
-			Log.e("BookmarkFragment", "Failed to write gallery entry", e);
+			Log.e(TAG, "Failed to write gallery entry", e);
 			return;
 		}
 		startActivity(viewerIntent);
@@ -246,6 +248,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 					return new AsyncTaskResult<List<GalleryEntry>>(result);
 				}
 				catch (ApiCallException e) {
+					Log.e(TAG, "Failed to load data", e);
 					return new AsyncTaskResult<List<GalleryEntry>>(e);
 				}
 			}

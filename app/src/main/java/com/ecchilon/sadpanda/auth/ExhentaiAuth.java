@@ -1,142 +1,163 @@
 package com.ecchilon.sadpanda.auth;
 
-import com.google.inject.Inject;
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.PersistentCookieStore;
-import com.loopj.android.http.RequestParams;
-import com.loopj.android.http.TextHttpResponseHandler;
-
+import java.io.IOException;
+import java.net.CookieManager;
+import java.net.HttpCookie;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Iterator;
 
-import org.apache.http.Header;
-import org.apache.http.client.protocol.ClientContext;
-import org.apache.http.cookie.Cookie;
-import org.apache.http.client.CookieStore;
-import org.apache.http.impl.cookie.BasicClientCookie;
-
+import android.util.Log;
+import com.ecchilon.sadpanda.net.PersistentCookieStore;
+import com.google.inject.Inject;
+import com.squareup.okhttp.Callback;
+import com.squareup.okhttp.FormEncodingBuilder;
+import com.squareup.okhttp.OkHttpClient;
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 import lombok.Getter;
 
 
 public class ExhentaiAuth {
-    public enum ExhentaiError {
-        NO_USERNAME("You must enter a username"),
-        USER_NOT_FOUND("You must already have registered for an account before you can log in"),
-        NO_PASSWORD("Your password field was not complete"),
-        INCORRECT_AUTH("Username or password incorrect"),
-        CONNECTION_FAILURE("Failed to connect");
+	public enum ExhentaiError {
+		NO_USERNAME("You must enter a username"),
+		USER_NOT_FOUND("You must already have registered for an account before you can log in"),
+		NO_PASSWORD("Your password field was not complete"),
+		INCORRECT_AUTH("Username or password incorrect"),
+		CONNECTION_FAILURE("Failed to connect");
 
 
-        @Getter
-        private String errorMessage;
+		@Getter
+		private String errorMessage;
 
-        private ExhentaiError(String errorMessage) {
-            this.errorMessage = errorMessage;
-        }
-    }
+		private ExhentaiError(String errorMessage) {
+			this.errorMessage = errorMessage;
+		}
+	}
 
-    private static final String logout = "https://forums.e-hentai.org/index.php?act=Login&CODE=03&k=cabd579871bc89de01a8d057b75bfd19";
-    private static final String login = "https://forums.e-hentai.org/index.php?act=Login&CODE=01";
-    private static final String Domain = ".exhentai.org";
+	private static final String TAG = "ExhentaiAuth";
 
-    public interface AuthListener {
-        public void onSuccess();
+	private static final String logout =
+			"https://forums.e-hentai.org/index.php?act=Login&CODE=03&k=cabd579871bc89de01a8d057b75bfd19";
+	private static final String login = "https://forums.e-hentai.org/index.php?act=Login&CODE=01";
+	private static final String Domain = ".exhentai.org";
 
-        public void onFailure(ExhentaiError error);
-    }
+	public interface AuthListener {
+		public void onSuccess();
 
-    private final AsyncHttpClient mClient;
+		public void onFailure(ExhentaiError error);
+	}
 
-    @Inject
-    public ExhentaiAuth(AsyncHttpClient client) {
-        this.mClient = client;
-    }
+	private final OkHttpClient mClient;
 
-    public void logout(final AuthListener listener) {
-        mClient.get(logout, new RequestParams(), new TextHttpResponseHandler() {
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, String responseBody) {
-                CookieStore cookieStore = (CookieStore) mClient.getHttpContext().getAttribute(ClientContext.COOKIE_STORE);
+	@Inject
+	public ExhentaiAuth(OkHttpClient client) {
+		this.mClient = client;
+	}
 
-                //Remove exhentai cookies
-                Iterator<Cookie> iterator = cookieStore.getCookies().iterator();
-                while (iterator.hasNext()) {
-                    Cookie cookie = iterator.next();
+	public void logout(final AuthListener listener) {
+		Request request = new Request.Builder().url(logout).get().build();
 
-                    if ((cookie.getName().contains("ipb_")
-                            || cookie.getName().contains("uconfig"))
-                            && cookie.getDomain().contains(Domain)) {
-                        iterator.remove();
-                    }
-                }
+		mClient.newCall(request).enqueue(new Callback() {
+			@Override
+			public void onFailure(Request request, IOException e) {
+				listener.onFailure(ExhentaiError.CONNECTION_FAILURE);
+			}
 
-                listener.onSuccess();
-            }
+			@Override
+			public void onResponse(Response response) throws IOException {
+				PersistentCookieStore cookieStore = getCookieStore();
 
-            @Override
-            public void onFailure(int statusCode, Header[] headers, String responseBody, Throwable error) {
-                listener.onFailure(ExhentaiError.CONNECTION_FAILURE);
-            }
-        });
-    }
+				//Remove exhentai cookies
+				Iterator<HttpCookie> iterator = cookieStore.getCookies().iterator();
+				while (iterator.hasNext()) {
+					HttpCookie cookie = iterator.next();
 
-    public void login(final String username, String password, final AuthListener listener) {
-        RequestParams params = new RequestParams();
-        params.put("UserName", username);
-        params.put("PassWord", password);
-        params.put("CookieDate", "1");
+					if ((cookie.getName().contains("ipb_")
+							|| cookie.getName().contains("uconfig"))
+							&& cookie.getDomain().contains(Domain)) {
+						iterator.remove();
+					}
+				}
 
-        mClient.post(login, params, new TextHttpResponseHandler() {
-            @Override
-            public void onFailure(int statusCode, Header[] headers, String responseString, Throwable throwable) {
-                listener.onFailure(ExhentaiError.CONNECTION_FAILURE);
-            }
+				listener.onSuccess();
+			}
+		});
+	}
 
-            @Override
-            public void onSuccess(int statusCode, Header[] headers, String responseString) {
-                //Check whether we've been successfully logged in to E-Hentai
-                if(responseString.contains("You are now logged in as: " + username)) {
-                    PersistentCookieStore cookieStore = getCookieStore();
+	public void login(final String username, String password, final AuthListener listener) {
+		Request request = new Request.Builder()
+				.url(login)
+				.post(new FormEncodingBuilder()
+						.add("UserName", username)
+						.add("PassWord", password)
+						.add("CookieDate", "1").build())
+				.build();
 
-                    //alter cookies to get access to exhentai
-                    Cookie[] cookies = new Cookie[cookieStore.getCookies().size()];
-                    cookieStore.getCookies().toArray(cookies);
-                    for (Cookie cookie : cookies) {
-                        if (cookie.getName().contains("ipb_") || cookie.getName().contains("uconfig")) {
-                            BasicClientCookie newCookie = new BasicClientCookie(
-                                    cookie.getName(), cookie.getValue());
-                            newCookie.setDomain(Domain);
-                            newCookie.setPath("/");
-                            newCookie.setAttribute("url", "http://exhentai.org");
-                            cookieStore.addCookie(newCookie);
-                            cookieStore.deleteCookie(cookie);
-                        }
-                    }
+		mClient.newCall(request).enqueue(new Callback() {
+			@Override
+			public void onFailure(Request request, IOException e) {
+				listener.onFailure(ExhentaiError.CONNECTION_FAILURE);
+			}
 
-                    listener.onSuccess();
-                }
-                else {
-                    for(ExhentaiError error : ExhentaiError.values()) {
-                        if (responseString.contains(error.getErrorMessage())) {
-                            listener.onFailure(error);
-                            return;
-                        }
-                    }
-                }
-            }
-        });
-    }
+			@Override
+			public void onResponse(Response response) throws IOException {
+				String responseString = response.body().string();
+				if (responseString.contains("You are now logged in as: " + username)) {
+					PersistentCookieStore cookieStore = getCookieStore();
 
-    public boolean isLoggedIn() {
-        for (Cookie cookie :  getCookieStore().getCookies()) {
-            if (cookie.getDomain().contains(Domain))
-                return true;
-        }
+					//alter cookies to get access to exhentai
+					HttpCookie[] cookies = new HttpCookie[cookieStore.getCookies().size()];
+					cookieStore.getCookies().toArray(cookies);
+					for (HttpCookie cookie : cookies) {
+						if (cookie.getName().contains("ipb_") || cookie.getName().contains("uconfig")) {
+							HttpCookie newCookie = new HttpCookie(
+									cookie.getName(), cookie.getValue());
+							newCookie.setDomain(Domain);
+							newCookie.setPath("/");
+							try {
+								cookieStore.add(new URI(newCookie.getDomain()), newCookie);
+							}
+							catch (URISyntaxException e) {
+								Log.d(TAG, "Failed to add new cookie for login", e);
+								listener.onFailure(ExhentaiError.CONNECTION_FAILURE);
+							}
+							try {
+								cookieStore.remove(new URI(cookie.getDomain()), cookie);
+							}
+							catch (URISyntaxException e) {
+								Log.d(TAG, "Failed to remove old cookie for login", e);
+								listener.onFailure(ExhentaiError.CONNECTION_FAILURE);
+							}
+						}
+					}
 
-        return false;
-    }
+					listener.onSuccess();
+				}
+				else {
+					for (ExhentaiError error : ExhentaiError.values()) {
+						if (responseString.contains(error.getErrorMessage())) {
+							listener.onFailure(error);
+							return;
+						}
+					}
+				}
+			}
+		});
+	}
 
-    private PersistentCookieStore getCookieStore() {
-        return (PersistentCookieStore) mClient.getHttpContext().getAttribute(ClientContext.COOKIE_STORE);
-    }
+	public boolean isLoggedIn() {
+		for (HttpCookie cookie : getCookieStore().getCookies()) {
+			if (cookie.getDomain().contains(Domain)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private PersistentCookieStore getCookieStore() {
+		return (PersistentCookieStore) ((CookieManager) mClient.getCookieHandler()).getCookieStore();
+	}
 }
 

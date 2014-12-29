@@ -1,22 +1,30 @@
 package com.ecchilon.sadpanda;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
+
 import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
+import com.ecchilon.sadpanda.net.PersistentCookieStore;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.loopj.android.http.AsyncHttpClient;
-import com.loopj.android.http.PersistentCookieStore;
+import com.squareup.okhttp.Cache;
+import com.squareup.okhttp.OkHttpClient;
 import com.squareup.picasso.Picasso;
-import org.apache.http.client.CookieStore;
 
 /**
  * Created by Alex on 20-9-2014.
  */
 public class ExhentaiModule extends AbstractModule {
+
+    private static final String HTTP_CACHE_FILE = "http-cache";
+    private static final long MAX_CACHE_SIZE = 1024 * 1024 * 10;    //10MB
 
     private final Context mContext;
 
@@ -36,12 +44,26 @@ public class ExhentaiModule extends AbstractModule {
     }
 
     @Provides
-    private AsyncHttpClient getClient() {
-        AsyncHttpClient httpClient = new AsyncHttpClient ();
+    private OkHttpClient getClient() {
+        OkHttpClient client = new OkHttpClient();
 
-        CookieStore cookieStore = new PersistentCookieStore(mContext);
-        httpClient.setCookieStore(cookieStore);
-        return httpClient;
+        client.setCookieHandler(new CookieManager(
+                new PersistentCookieStore(mContext),
+                CookiePolicy.ACCEPT_ALL));
+
+        File httpCache = new File(mContext.getCacheDir(), HTTP_CACHE_FILE);
+        if(!httpCache.exists()) {
+            httpCache.mkdir();
+        }
+
+        try {
+            Cache cache = new Cache(httpCache, MAX_CACHE_SIZE);
+            client.setCache(cache);
+        }
+        catch (IOException e) {
+
+        }
+        return client;
     }
 
     private class PicassoListener implements Picasso.Listener {

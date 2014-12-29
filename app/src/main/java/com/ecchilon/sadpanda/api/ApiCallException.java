@@ -1,5 +1,6 @@
 package com.ecchilon.sadpanda.api;
 
+import com.squareup.okhttp.Response;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.apache.http.HttpResponse;
@@ -14,7 +15,7 @@ public class ApiCallException extends Exception {
 
     private final ApiErrorCode code;
     private final String url;
-    private final HttpResponse response;
+    private final Response response;
 
     public ApiCallException(ApiErrorCode code) {
         this.code = code;
@@ -22,7 +23,7 @@ public class ApiCallException extends Exception {
         response = null;
     }
 
-    public ApiCallException(ApiErrorCode code, String url, HttpResponse response) {
+    public ApiCallException(ApiErrorCode code, String url, Response response) {
         this.code = code;
         this.url = url;
         this.response = response;
