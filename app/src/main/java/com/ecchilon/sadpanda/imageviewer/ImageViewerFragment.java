@@ -22,7 +22,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
-import com.ecchilon.sadpanda.bookmarks.BookmarkController;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.google.inject.Inject;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -55,9 +54,6 @@ public class ImageViewerFragment extends RoboFragment {
 	private GestureViewPager mPager;
 
 	@Inject
-	private BookmarkController mBookmarkController;
-
-	@Inject
 	private ObjectMapper mObjectMapper;
 
 	private VisibilityToggler mVisibilityToggler;
@@ -80,11 +76,11 @@ public class ImageViewerFragment extends RoboFragment {
 	@Override
 	public void onPrepareOptionsMenu(Menu menu) {
 		MenuItem bookmark = menu.findItem(R.id.bookmark);
-		boolean isBookmarked = mBookmarkController.hasBookmark(mGalleryEntry);
-		bookmark.setEnabled(!isBookmarked);
+		bookmark.setEnabled(false);
 
-		if (isBookmarked) {
-			Drawable resIcon = getResources().getDrawable(R.drawable.ic_action_bookmark);
+		//TODO check if item is bookmarked
+		if (true) {
+			Drawable resIcon = getResources().getDrawable(R.drawable.ic_action_favorite);
 			resIcon.mutate().setColorFilter(Color.GRAY, PorterDuff.Mode.MULTIPLY);
 			bookmark.setIcon(resIcon);
 		}
@@ -96,10 +92,7 @@ public class ImageViewerFragment extends RoboFragment {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 			case R.id.bookmark:
-				if (mBookmarkController.addBookmark(mGalleryEntry)) {
-					getActivity().invalidateOptionsMenu();
-				}
-
+				//TODO add bookmark
 				return true;
 		}
 

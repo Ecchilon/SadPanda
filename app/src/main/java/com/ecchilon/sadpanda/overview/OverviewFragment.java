@@ -6,6 +6,7 @@ import java.util.List;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
@@ -22,14 +23,16 @@ import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.api.ApiCallException;
 import com.ecchilon.sadpanda.api.DataLoader;
-import com.ecchilon.sadpanda.bookmarks.BookmarkController;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerActivity;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerFragment;
+import com.ecchilon.sadpanda.search.SearchDialogFragment;
 import com.ecchilon.sadpanda.util.AsyncTaskResult;
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.paging.listview.PagingListView;
 import lombok.NonNull;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
 
@@ -40,14 +43,26 @@ import roboguice.inject.InjectView;
 public class OverviewFragment extends RoboFragment implements AbsListView.OnItemClickListener, SwipeRefreshLayout
 		.OnRefreshListener, PagingListView.Pagingable {
 
-	private static final int GALLERY_BATCH_SIZE = 25;
-	private static final int TOAST_TITLE_MAX_LENGTH = 50;
+	public enum SearchType {
+		NONE,
+		SIMPLE,
+		ADVANCED
+	}
 
+	private static final int GALLERY_BATCH_SIZE = 25;
+
+	private static final String STORED_ENTRIES_KEY = "OverviewStoredEntries";
+	private static final String STORED_POSITION_KEY = "OverviewStoredPosition";
+	private static final String STORED_PAGE_KEY = "OverviewStoredPage";
+	private static final String STORED_MORE_ITEMS_KEY = "OverviewStoredHasMoreItems";
+
+	public static final String SEARCH_TYPE_KEY = "SearchTypeKey";
 	public static final String URL_KEY = "ExhentaiURL";
-	public static final String QUERY_KEY = "ExhentaiQuery";
 
 	@InjectView(R.id.overview_list)
 	private PagingListView mListView;
+
+	@Nullable
 	@InjectView(R.id.swipe_container)
 	private SwipeRefreshLayout mRefreshLayout;
 
@@ -57,36 +72,32 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	private ObjectMapper mObjectMapper;
 
 	@Inject
-	private BookmarkController mBookmarkController;
-
-	@Inject
 	private DataLoader mDataLoader;
 
 	private String mQueryUrl;
+	private SearchType mSearchType;
 
 	private int mCurrentPage = 0;
 
-	public static OverviewFragment newInstance(@NonNull String url) {
+	public static OverviewFragment newInstance(@NonNull String url, SearchType searchType) {
 		OverviewFragment fragment = new OverviewFragment();
 		if (url != null) {
 			Bundle args = new Bundle();
 			args.putString(URL_KEY, url);
+			args.putSerializable(SEARCH_TYPE_KEY, searchType);
 			fragment.setArguments(args);
 		}
 
 		return fragment;
 	}
 
-	public OverviewFragment() {
-	}
-
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setRetainInstance(true);
 		setHasOptionsMenu(true);
 
 		mQueryUrl = getArguments().getString(URL_KEY);
+		mSearchType = (SearchType) getArguments().getSerializable(SEARCH_TYPE_KEY);
 	}
 
 	@Override
@@ -94,6 +105,9 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		super.onCreateOptionsMenu(menu, inflater);
 
 		inflater.inflate(R.menu.overview, menu);
+		if(mSearchType == SearchType.NONE) {
+			menu.removeItem(R.id.action_search);
+		}
 	}
 
 	@Override
@@ -106,17 +120,51 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	public void onViewCreated(View view, Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 
-		mAdapter = new OverviewAdapter();
+		if(savedInstanceState == null) {
+			mAdapter = new OverviewAdapter();
+			mListView.setAdapter(mAdapter);
+			mListView.setHasMoreItems(true);
+		}
+		else {
+			List<GalleryEntry> entries;
+			try {
+				entries = mObjectMapper.readValue(savedInstanceState.getString(STORED_ENTRIES_KEY),
+						new TypeReference<List<GalleryEntry>>() {});
+			}
+			catch (IOException e) {
+				entries = Lists.newArrayList();
+			}
+			mAdapter = new OverviewAdapter(entries);
+			mCurrentPage = savedInstanceState.getInt(STORED_PAGE_KEY, 0);
+			mListView.setAdapter(mAdapter);
+			mListView.smoothScrollToPosition(savedInstanceState.getInt(STORED_POSITION_KEY, 0));
+			mListView.setHasMoreItems(savedInstanceState.getBoolean(STORED_MORE_ITEMS_KEY, true));
+		}
 
-		mListView.setAdapter(mAdapter);
-		mListView.setHasMoreItems(true);
 		mListView.setEmptyView(view.findViewById(android.R.id.empty));
 		mListView.setOnItemClickListener(this);
 		mListView.setPagingableListener(this);
 		mListView.setOnScrollListener(new PagedOnScrollListener());
 
 		registerForContextMenu(mListView);
-		mRefreshLayout.setOnRefreshListener(this);
+		if(mRefreshLayout != null) {
+			mRefreshLayout.setOnRefreshListener(this);
+		}
+	}
+
+	@Override
+	public void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+
+		try {
+			outState.putString(STORED_ENTRIES_KEY, mObjectMapper.writeValueAsString(mAdapter.getItems()));
+		}
+		catch (IOException ignored) {
+		}
+
+		outState.putInt(STORED_POSITION_KEY, mListView.getFirstVisiblePosition());
+		outState.putInt(STORED_PAGE_KEY, mCurrentPage);
+		outState.putBoolean(STORED_MORE_ITEMS_KEY, mListView.hasMoreItems());
 	}
 
 	@Override
@@ -125,9 +173,21 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 			case R.id.refresh_menu:
 				onRefresh();
 				return true;
+			case R.id.action_search:
+				showSearchFragment();
+				return true;
 		}
 
 		return super.onOptionsItemSelected(item);
+	}
+
+	private void showSearchFragment() {
+		Bundle args = new Bundle();
+		args.putSerializable(SEARCH_TYPE_KEY, mSearchType);
+
+		SearchDialogFragment fragment = new SearchDialogFragment();
+		fragment.setArguments(args);
+		fragment.show(getFragmentManager(), "Search");
 	}
 
 	@Override
@@ -135,7 +195,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		if (v == mListView) {
 			int position = ((AdapterView.AdapterContextMenuInfo) menuInfo).position;
 			GalleryEntry entry = mAdapter.getItem(position);
-			menu.add(0, 0, 0, R.string.add_bookmark).setEnabled(!mBookmarkController.hasBookmark(entry));
+			menu.add(0, 0, 0, R.string.add_bookmark).setEnabled(false);
 		}
 	}
 
@@ -145,7 +205,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 			case 0:
 				AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
 				GalleryEntry entry = mAdapter.getItem(info.position);
-				mBookmarkController.addBookmark(entry);
+				//TODO add bookmark
 		}
 
 		return super.onContextItemSelected(item);
@@ -194,7 +254,9 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 			protected void onPostExecute(AsyncTaskResult<List<GalleryEntry>> entryList) {
 				super.onPostExecute(entryList);
 
-				mRefreshLayout.setRefreshing(false);
+				if(mRefreshLayout != null) {
+					mRefreshLayout.setRefreshing(false);
+				}
 
 				if (entryList.isSuccessful()) {
 					mListView.onFinishLoading(entryList.getResult().size() >= GALLERY_BATCH_SIZE,

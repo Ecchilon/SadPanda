@@ -10,4 +10,10 @@
 		app:showAsAction="ifRoom"
 		android:title="@string/refresh_menu"
 		/>
+	<item
+		android:id="@+id/action_search"
+		android:icon="@drawable/ic_search"
+		app:showAsAction="ifRoom"
+		android:title="@string/action_search"
+		/>
 </menu>

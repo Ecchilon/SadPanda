@@ -12,11 +12,15 @@ import com.loopj.android.http.AsyncHttpClient;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
@@ -24,6 +28,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -39,6 +44,7 @@ import roboguice.util.Strings;
  */
 public class DataLoader {
     public static final int PHOTO_PER_PAGE = 40;
+    private static final String FAVORITES_URL_EX = "http://exhentai.org/favorites.php?favcat=%d";
     private static final String API_URL_EX = "http://exhentai.org/api.php";
     private static final String GALLERY_URL_EX = "http://exhentai.org/g/%d/%s";
     private static final String PHOTO_URL_EX = "http://exhentai.org/s/%s/%d-%d";
@@ -342,6 +348,44 @@ public class DataLoader {
         } else {
             return galleryList.get(0);
         }
+    }
+
+    public boolean removeGalleryFromFavorites(int favorites, GalleryEntry... entries) throws ApiCallException {
+        if(entries.length == 0) {
+            return false;
+        }
+
+        if(favorites < 0 || favorites > 9) {
+            throw new ApiCallException(ApiErrorCode.TOKEN_OR_PAGE_INVALID);
+        }
+
+        HttpPost httpPost = new HttpPost(API_URL_EX);
+        httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
+
+        List <NameValuePair> nvps = new ArrayList <NameValuePair>();
+        nvps.add(new BasicNameValuePair("ddact", "delete"));
+        nvps.add(new BasicNameValuePair("apply", "Apply"));
+
+        for(GalleryEntry entry : entries) {
+            nvps.add(new BasicNameValuePair("modifygids[]", entry.getGalleryId().toString()));
+        }
+
+        try {
+            httpPost.setEntity(new UrlEncodedFormEntity(nvps));
+        }
+        catch (UnsupportedEncodingException e) {
+            throw new ApiCallException(ApiErrorCode.IO_ERROR, e);
+        }
+
+        HttpResponse response;
+        try {
+            response = getHttpResponse(httpPost);
+        }
+        catch (IOException e) {
+            throw new ApiCallException(ApiErrorCode.IO_ERROR, e);
+        }
+
+        return response.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
     }
 
     public JSONArray getGalleryTokenList(JSONArray pageList) throws ApiCallException {

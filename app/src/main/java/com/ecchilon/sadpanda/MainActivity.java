@@ -4,30 +4,31 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
-
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.view.Menu;
 import android.view.MenuItem;
-
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
 import com.ecchilon.sadpanda.auth.LoginFragment;
-import com.ecchilon.sadpanda.bookmarks.BookmarkFragment;
+import com.ecchilon.sadpanda.favorites.FavoritesFragment;
 import com.ecchilon.sadpanda.overview.OverviewFragment;
 import com.ecchilon.sadpanda.overview.SearchActivity;
 import com.ecchilon.sadpanda.preferences.PandaPreferenceActivity;
-import com.ecchilon.sadpanda.search.AbstractSearchActivity;
+import com.ecchilon.sadpanda.search.OnSearchSubmittedListener;
 import com.google.inject.Inject;
-
+import roboguice.activity.RoboActionBarActivity;
 import roboguice.inject.ContentView;
 
 
 @ContentView(R.layout.activity_main)
-public class MainActivity extends AbstractSearchActivity implements LoginFragment.LoginListener,
-        NavigationDrawerFragment.NavigationDrawerCallbacks {
+public class MainActivity extends RoboActionBarActivity implements LoginFragment.LoginListener,
+		NavigationDrawerFragment.NavigationDrawerCallbacks, OnSearchSubmittedListener {
 
 	public static final String DEFAULT_QUERY_KEY = "defaultQueryKey";
 	private static final String DEFAULT_QUERY_URL = "http://exhentai.org";
+
+	private static final String OVERVIEW_TAG = "PandaOverviewTag";
+	private static final String FAVORITES_TAG = "PandaFavoritesTag";
 
 	@Inject
 	private ExhentaiAuth mAuth;
@@ -83,7 +84,7 @@ public class MainActivity extends AbstractSearchActivity implements LoginFragmen
 	public boolean onPrepareOptionsMenu(Menu menu) {
 		MenuItem login = menu.findItem(R.id.login_menu);
 
-		if(login == null) {
+		if (login == null) {
 			return true;
 		}
 
@@ -138,8 +139,14 @@ public class MainActivity extends AbstractSearchActivity implements LoginFragmen
 
 	private void showOverviewFragment() {
 		FragmentManager fragmentManager = getSupportFragmentManager();
+
+		OverviewFragment fragment = (OverviewFragment) fragmentManager.findFragmentByTag(OVERVIEW_TAG);
+		if(fragment == null) {
+			fragment = OverviewFragment.newInstance(getDefaultQuery(), OverviewFragment.SearchType.ADVANCED);
+		}
+
 		fragmentManager.beginTransaction()
-				.replace(R.id.container, OverviewFragment.newInstance(getDefaultQuery()))
+				.replace(R.id.container, fragment, OVERVIEW_TAG)
 				.commit();
 	}
 
@@ -151,8 +158,14 @@ public class MainActivity extends AbstractSearchActivity implements LoginFragmen
 				break;
 			case 1:
 				FragmentManager fragmentManager = getSupportFragmentManager();
+
+				FavoritesFragment fragment = (FavoritesFragment) fragmentManager.findFragmentByTag(FAVORITES_TAG);
+				if(fragment == null) {
+					fragment = new FavoritesFragment();
+				}
+
 				fragmentManager.beginTransaction()
-						.replace(R.id.container, new BookmarkFragment())
+						.replace(R.id.container, fragment, FAVORITES_TAG)
 						.commit();
 				break;
 		}
@@ -179,7 +192,7 @@ public class MainActivity extends AbstractSearchActivity implements LoginFragmen
 	public void onSearchSubmitted(String url, String query) {
 		Intent searchIntent = new Intent(this, SearchActivity.class);
 		searchIntent.putExtra(OverviewFragment.URL_KEY, url);
-		searchIntent.putExtra(OverviewFragment.QUERY_KEY, query);
+		searchIntent.putExtra(SearchActivity.QUERY_KEY, query);
 
 		startActivity(searchIntent);
 	}

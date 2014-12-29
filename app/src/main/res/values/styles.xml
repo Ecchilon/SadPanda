@@ -7,7 +7,12 @@
         <item name="android:actionBarStyle">@style/ActionBarStyle</item>
         <item name="colorPrimary">@color/dark_gray</item>
         <item name="colorAccent">@color/dark_gray</item>
+        <item name="vpiTabPageIndicatorStyle">@style/AppTheme.TabPageIndicator</item>
         <!-- Customize your theme here. -->
+    </style>
+
+    <style name="AppTheme.TabPageIndicator" parent="Widget.TabPageIndicator">
+
     </style>
 
     <style name="ActionBarStyle" parent="Widget.AppCompat.Light.ActionBar.Solid.Inverse">

@@ -1,6 +1,7 @@
 package com.ecchilon.sadpanda.api;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.apache.http.HttpResponse;
 
 /**
@@ -8,6 +9,7 @@ import org.apache.http.HttpResponse;
  * @author alex on 2014/9/23.
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class ApiCallException extends Exception {
 
     private final ApiErrorCode code;

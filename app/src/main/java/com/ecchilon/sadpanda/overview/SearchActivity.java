@@ -4,21 +4,22 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.MenuItem;
 import android.view.View;
-
 import com.ecchilon.sadpanda.ErrorFragment;
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
-import com.ecchilon.sadpanda.search.AbstractSearchActivity;
+import com.ecchilon.sadpanda.search.OnSearchSubmittedListener;
 import com.google.inject.Inject;
-
 import me.imid.swipebacklayout.lib.SwipeBackLayout;
 import me.imid.swipebacklayout.lib.Utils;
 import me.imid.swipebacklayout.lib.app.SwipeBackActivityBase;
 import me.imid.swipebacklayout.lib.app.SwipeBackActivityHelper;
+import roboguice.activity.RoboActionBarActivity;
 import roboguice.inject.ContentView;
 
 @ContentView(R.layout.activity_search)
-public class SearchActivity extends AbstractSearchActivity implements SwipeBackActivityBase {
+public class SearchActivity extends RoboActionBarActivity implements SwipeBackActivityBase, OnSearchSubmittedListener {
+
+    public static final String QUERY_KEY = "ExhentaiQuery";
 
     private SwipeBackActivityHelper mHelper;
 
@@ -34,7 +35,7 @@ public class SearchActivity extends AbstractSearchActivity implements SwipeBackA
 
         if (savedInstanceState == null) {
             String url = getIntent().getStringExtra(OverviewFragment.URL_KEY);
-            String query = getIntent().getStringExtra(OverviewFragment.QUERY_KEY);
+            String query = getIntent().getStringExtra(QUERY_KEY);
             onSearchSubmitted(url, query);
         }
     }
@@ -87,7 +88,7 @@ public class SearchActivity extends AbstractSearchActivity implements SwipeBackA
         getSupportActionBar().setTitle(query);
 
         if(mExhentaiAuth.isLoggedIn()) {
-            fragment = OverviewFragment.newInstance(url);
+            fragment = OverviewFragment.newInstance(url, OverviewFragment.SearchType.ADVANCED);
         }
         else {
             fragment = ErrorFragment.newInstance(R.string.login_request);

@@ -53,16 +53,17 @@
     <string name="action_cancel">Cancel</string>
     <string name="title_activity_main_activity2">MainActivity2</string>
     <string name="title_section1">Front Page</string>
-    <string name="title_section2">Bookmarks</string>
+    <string name="title_section2">Favorites</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="action_example">Example action</string>
     <string name="remove_bookmark">Remove</string>
-    <string name="bookmark">Bookmark</string>
+    <string name="add_to_favorites">Add to favorites</string>
     <string name="no_bookmarks">No bookmarks yet</string>
     <string name="entry_parsing_failure">Something went wrong trying to open the gallery</string>
     <string name="add_bookmark">Bookmark</string>
     <string name="bookmarked">Bookmarked</string>
     <string name="current_page">page</string>
+    <string name="favorites">Favorites</string>
 
 </resources>

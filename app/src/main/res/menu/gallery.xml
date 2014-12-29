@@ -5,6 +5,6 @@
 	<item
 		android:id="@+id/bookmark"
 		app:showAsAction="ifRoom"
-		android:title="@string/bookmark"
-		android:icon="@drawable/ic_action_bookmark"/>
+		android:title="@string/add_to_favorites"
+		android:icon="@drawable/ic_action_favorite"/>
 </menu>

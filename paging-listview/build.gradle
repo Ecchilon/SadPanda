@@ -1,5 +1,4 @@
 apply plugin: 'com.android.library'
-//apply plugin: 'maven'
 
 android {
     compileSdkVersion 21
@@ -12,18 +11,3 @@ android {
         versionName '1.2'
     }
 }
-
-
-//group = 'com.paginglistview'
-//archivesBaseName = 'paging-listview'
-//version = '1.0'
-//
-//uploadArchives {
-//    repositories {
-//        mavenDeployer {
-//            repository(url: uri("../paginglistview_aar"))
-//        }
-//    }
-//}
-
-//apply from: 'https://raw.github.com/chrisbanes/gradle-mvn-push/master/gradle-mvn-push.gradle'

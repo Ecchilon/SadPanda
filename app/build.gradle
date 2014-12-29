@@ -27,9 +27,13 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    project(':paging-listview')
+
     provided 'org.projectlombok:lombok:1.12.6'
     provided 'org.roboguice:roboblender:3.0'
+
+    compile project(':paging-listview')
+    compile project(':viewpager-indicator')
+
     compile 'com.google.guava:guava:18.0'
     compile 'org.roboguice:roboguice:3.0'
     compile 'com.loopj.android:android-async-http:1.4.5'
@@ -41,5 +45,4 @@ dependencies {
     compile 'com.github.chrisbanes.photoview:library:1.2.3'
     compile 'com.loopeer.android.thirdparty:swipe-back-layout:1.0'
     compile 'com.github.castorflex.smoothprogressbar:library:1.0.0'
-    compile 'com.github.nicolasjafelle:paginglistview:1.1'
 }

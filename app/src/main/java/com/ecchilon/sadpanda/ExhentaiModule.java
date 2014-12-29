@@ -4,7 +4,6 @@ import android.content.Context;
 import android.net.Uri;
 import android.util.Log;
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
-import com.ecchilon.sadpanda.bookmarks.BookmarkController;
 import com.google.inject.AbstractModule;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
@@ -29,7 +28,6 @@ public class ExhentaiModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(ExhentaiAuth.class).in(Singleton.class);
-        bind(BookmarkController.class).in(Singleton.class);
 
         Picasso.Builder builder = new Picasso.Builder(mContext);
         builder.listener(new PicassoListener());
