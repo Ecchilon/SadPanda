@@ -65,5 +65,6 @@
     <string name="bookmarked">Bookmarked</string>
     <string name="current_page">page</string>
     <string name="favorites">Favorites</string>
+    <string name="nothing_here">Nothing here but you and me</string>
 
 </resources>

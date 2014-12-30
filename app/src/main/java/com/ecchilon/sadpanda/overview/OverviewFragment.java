@@ -62,6 +62,12 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	@InjectView(R.id.overview_list)
 	private PagingListView mListView;
 
+	@InjectView(android.R.id.empty)
+	private View mLoadingView;
+
+	@InjectView(R.id.no_content)
+	private View mNoContentView;
+
 	@Nullable
 	@InjectView(R.id.swipe_container)
 	private SwipeRefreshLayout mRefreshLayout;
@@ -141,7 +147,13 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 			mListView.setHasMoreItems(savedInstanceState.getBoolean(STORED_MORE_ITEMS_KEY, true));
 		}
 
-		mListView.setEmptyView(view.findViewById(android.R.id.empty));
+		if(mAdapter.getCount() == 0 && !mListView.hasMoreItems()) {
+			showEmpty();
+		}
+		else {
+			showLoading();
+		}
+
 		mListView.setOnItemClickListener(this);
 		mListView.setPagingableListener(this);
 		mListView.setOnScrollListener(new PagedOnScrollListener());
@@ -231,6 +243,8 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		mAdapter.removeAllItems();
 		mListView.setHasMoreItems(true);
 		mCurrentPage = 0;
+
+		showLoading();
 	}
 
 	@Override
@@ -263,9 +277,23 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 							entryList.getResult());
 				}
 
+				if(mAdapter.getCount() == 0) {
+					showEmpty();
+				}
+
 				//TODO show reload for page on failure
 			}
 		}.execute();
+	}
+
+	private void showEmpty() {
+		mListView.setEmptyView(mNoContentView);
+		mLoadingView.setVisibility(View.GONE);
+	}
+
+	private void showLoading() {
+		mListView.setEmptyView(mLoadingView);
+		mNoContentView.setVisibility(View.GONE);
 	}
 
 	private class PagedOnScrollListener implements AbsListView.OnScrollListener {
