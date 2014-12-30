@@ -1,5 +1,7 @@
 package com.ecchilon.sadpanda.auth;
 
+import java.io.IOException;
+
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
@@ -7,6 +9,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.DialogInterface;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -124,22 +127,8 @@ public class LoginFragment extends RoboDialogFragment {
 
 	private void performLogin() {
 		showProgress(true);
-		mExhentaiAuth.login(mUsername.getText().toString(), mPassword.getText().toString(),
-				new ExhentaiAuth.AuthListener() {
-					@Override
-					public void onSuccess() {
-						dismiss();
-						mAuthListener.onSuccess();
-					}
 
-					@Override
-					public void onFailure(ExhentaiAuth.ExhentaiError error) {
-						showProgress(false);
-						mUsername.setError(error.getErrorMessage());
-						mUsername.requestFocus();
-					}
-				}
-		);
+		new PandaLoginTask(new PandaAuthListener()).execute(mUsername.getText().toString(), mPassword.getText().toString());
 	}
 
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
@@ -196,5 +185,36 @@ public class LoginFragment extends RoboDialogFragment {
 		public void onTextChanged(CharSequence s, int start, int before, int count) {
 		}
 
+	}
+
+	private class PandaAuthListener implements ExhentaiAuth.AuthListener {
+		@Override
+		public void onSuccess() {
+			dismiss();
+			mAuthListener.onSuccess();
+		}
+
+		@Override
+		public void onFailure(ExhentaiAuth.ExhentaiError error) {
+			showProgress(false);
+			mUsername.setError(error.getErrorMessage());
+			mUsername.requestFocus();
+		}
+	}
+
+	private class PandaLoginTask extends AsyncTask<String, Void, Void> {
+
+		private final PandaAuthListener listener;
+
+		public PandaLoginTask(PandaAuthListener listener) {
+			this.listener = listener;
+		}
+
+		@Override
+		protected Void doInBackground(String... params) {
+			mExhentaiAuth.login(params[0], params[1], listener);
+
+			return null;
+		}
 	}
 }
