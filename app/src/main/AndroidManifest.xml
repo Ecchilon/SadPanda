@@ -28,7 +28,7 @@
             android:label="@string/title_activity_overview"
             android:parentActivityName="com.ecchilon.sadpanda.MainActivity"
             android:theme="@style/SwipeBackTheme"
-            android:windowSoftInputMode="adjustPan" >
+            android:windowSoftInputMode="adjustPan" >+
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.ecchilon.sadpanda.MainActivity" />
@@ -40,5 +40,9 @@
             android:name="com.ecchilon.sadpanda.preferences.PandaPreferenceActivity"
             android:label="@string/title_activity_panda_preference" >
         </activity>
+
+        <meta-data android:name="roboguice.modules" android:value="com.ecchilon.sadpanda.ExhentaiModule"/>
     </application>
+
+
 </manifest>

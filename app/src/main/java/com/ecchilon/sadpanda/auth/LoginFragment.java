@@ -1,6 +1,6 @@
 package com.ecchilon.sadpanda.auth;
 
-import java.io.IOException;
+import static com.ecchilon.sadpanda.auth.ExhentaiAuth.*;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -24,6 +24,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.util.AsyncTaskResult;
 import com.google.inject.Inject;
 
 import roboguice.fragment.RoboDialogFragment;
@@ -128,7 +129,7 @@ public class LoginFragment extends RoboDialogFragment {
 	private void performLogin() {
 		showProgress(true);
 
-		new PandaLoginTask(new PandaAuthListener()).execute(mUsername.getText().toString(), mPassword.getText().toString());
+		new PandaLoginTask().execute(mUsername.getText().toString(), mPassword.getText().toString());
 	}
 
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR2)
@@ -187,34 +188,24 @@ public class LoginFragment extends RoboDialogFragment {
 
 	}
 
-	private class PandaAuthListener implements ExhentaiAuth.AuthListener {
+	private class PandaLoginTask extends AsyncTask<String, Void, ExhentaiResult> {
+
 		@Override
-		public void onSuccess() {
-			dismiss();
-			mAuthListener.onSuccess();
+		protected ExhentaiResult doInBackground(String... params) {
+			return mExhentaiAuth.login(params[0], params[1]);
 		}
 
 		@Override
-		public void onFailure(ExhentaiAuth.ExhentaiError error) {
-			showProgress(false);
-			mUsername.setError(error.getErrorMessage());
-			mUsername.requestFocus();
-		}
-	}
-
-	private class PandaLoginTask extends AsyncTask<String, Void, Void> {
-
-		private final PandaAuthListener listener;
-
-		public PandaLoginTask(PandaAuthListener listener) {
-			this.listener = listener;
-		}
-
-		@Override
-		protected Void doInBackground(String... params) {
-			mExhentaiAuth.login(params[0], params[1], listener);
-
-			return null;
+		protected void onPostExecute(ExhentaiResult result) {
+			if(result == ExhentaiResult.SUCCESS) {
+				dismiss();
+				mAuthListener.onSuccess();
+			}
+			else {
+				showProgress(false);
+				mUsername.setError(result.getErrorMessage());
+				mUsername.requestFocus();
+			}
 		}
 	}
 }
