@@ -232,15 +232,22 @@ public class DataLoader {
         }
     }
 
-    public List<GalleryEntry> getGalleryIndex(String base) throws ApiCallException {
+    public List<GalleryEntry> getGalleryIndex(String base, boolean cache) throws ApiCallException {
         return getGalleryIndex(base, 0);
     }
 
     public List<GalleryEntry> getGalleryIndex(String base, int page) throws ApiCallException {
+        return getGalleryIndex(base, page, true);
+    }
+
+    public List<GalleryEntry> getGalleryIndex(String base, int page, boolean cache) throws ApiCallException {
         String url = getGalleryIndexUrl(base, page);
 
         try {
             HttpGet httpGet = new HttpGet(url);
+            if(!cache) {
+                httpGet.addHeader("Cache-Control", "no-cache");
+            }
             HttpResponse response = getHttpResponse(httpGet);
             String html = readResponse(response);
             Matcher matcher = pGalleryURL.matcher(html);

@@ -1,8 +1,11 @@
 package com.ecchilon.sadpanda;
 
+import java.io.File;
+
 import android.content.Context;
 import android.net.Uri;
 import android.net.http.AndroidHttpClient;
+import android.net.http.HttpResponseCache;
 import android.util.Log;
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
 import com.google.inject.AbstractModule;
