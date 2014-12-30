@@ -1,14 +1,19 @@
 package com.ecchilon.sadpanda.api;
 
-import android.net.Uri;
-import android.os.Looper;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import android.net.Uri;
 import com.ecchilon.sadpanda.imageviewer.ImageEntry;
 import com.ecchilon.sadpanda.overview.Category;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
+import com.ecchilon.sadpanda.util.NetUtils;
 import com.google.inject.Inject;
-import com.loopj.android.http.AsyncHttpClient;
-
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -26,15 +31,6 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import roboguice.util.Strings;
 
 
@@ -58,9 +54,9 @@ public class DataLoader {
     private final HttpContext mHttpContext;
 
     @Inject
-    private DataLoader(AsyncHttpClient httpClient) {
-        mHttpClient = httpClient.getHttpClient();
-        mHttpContext = httpClient.getHttpContext();
+    private DataLoader(HttpClient httpClient, HttpContext context) {
+        mHttpClient = httpClient;
+        mHttpContext = context;
     }
 
     private HttpResponse getHttpResponse(HttpRequestBase httpRequest) throws IOException {
@@ -68,7 +64,7 @@ public class DataLoader {
     }
 
     private JSONObject callApi(JSONObject json) throws ApiCallException {
-        assertNotMainThread();
+        NetUtils.assertNotMainThread();
         String responseStr = "";
 
         try {
@@ -112,7 +108,7 @@ public class DataLoader {
     }
 
     public List<ImageEntry> getPhotoList(GalleryEntry gallery, int page) throws ApiCallException {
-        assertNotMainThread();
+        NetUtils.assertNotMainThread();
         try {
             String url = getGalleryUrl(gallery, page);
 
@@ -195,7 +191,7 @@ public class DataLoader {
     }
 
     private String getShowkey(GalleryEntry gallery, ImageEntry entry) throws ApiCallException {
-        assertNotMainThread();
+        NetUtils.assertNotMainThread();
         try {
             String url = getImagePageUrl(entry);
 
@@ -236,15 +232,22 @@ public class DataLoader {
         }
     }
 
-    public List<GalleryEntry> getGalleryIndex(String base) throws ApiCallException {
+    public List<GalleryEntry> getGalleryIndex(String base, boolean cache) throws ApiCallException {
         return getGalleryIndex(base, 0);
     }
 
     public List<GalleryEntry> getGalleryIndex(String base, int page) throws ApiCallException {
+        return getGalleryIndex(base, page, true);
+    }
+
+    public List<GalleryEntry> getGalleryIndex(String base, int page, boolean cache) throws ApiCallException {
         String url = getGalleryIndexUrl(base, page);
 
         try {
             HttpGet httpGet = new HttpGet(url);
+            if(!cache) {
+                httpGet.addHeader("Cache-Control", "no-cache");
+            }
             HttpResponse response = getHttpResponse(httpGet);
             String html = readResponse(response);
             Matcher matcher = pGalleryURL.matcher(html);
@@ -450,12 +453,6 @@ public class DataLoader {
         builder.appendQueryParameter("p", Integer.toString(page));
 
         return builder.build().toString();
-    }
-
-    private static void assertNotMainThread() {
-        if(Looper.myLooper() == Looper.getMainLooper()) {
-            throw new IllegalStateException("API can't be called from UI Thread!");
-        }
     }
 
     private static String getImagePageUrl(ImageEntry entry) {
