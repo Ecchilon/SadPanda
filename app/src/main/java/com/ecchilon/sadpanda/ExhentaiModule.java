@@ -1,15 +1,18 @@
 package com.ecchilon.sadpanda;
 
-import java.io.File;
-
-import static com.ecchilon.sadpanda.auth.ExhentaiAuth.*;
+import static com.ecchilon.sadpanda.auth.ExhentaiAuth.HASH_KEY;
+import static com.ecchilon.sadpanda.auth.ExhentaiAuth.IPB_MEMBER_ID;
+import static com.ecchilon.sadpanda.auth.ExhentaiAuth.IPB_PASS_HASH;
+import static com.ecchilon.sadpanda.auth.ExhentaiAuth.IPB_SESSION_ID;
+import static com.ecchilon.sadpanda.auth.ExhentaiAuth.MEMBER_KEY;
+import static com.ecchilon.sadpanda.auth.ExhentaiAuth.PandaHttpCookie;
+import static com.ecchilon.sadpanda.auth.ExhentaiAuth.SESSION_KEY;
 
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.net.http.AndroidHttpClient;
-import android.net.http.HttpResponseCache;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
@@ -24,7 +27,6 @@ import org.apache.http.client.protocol.ClientContext;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
-import roboguice.RoboGuice;
 
 /**
  * Created by Alex on 20-9-2014.

@@ -45,7 +45,7 @@ import roboguice.util.Strings;
  */
 public class DataLoader {
 	public static final int PHOTO_PER_PAGE = 40;
-	private static final String FAVORITES_URL_EX = "http://exhentai.org/favorites.php?favcat=%d";
+	private static final String FAVORITES_URL_EX = "http://exhentai.org/gallerypopups.php?gid=%d&t=%s&act=addfav";
 	private static final String API_URL_EX = "http://exhentai.org/api.php";
 	private static final String GALLERY_URL_EX = "http://exhentai.org/g/%d/%s";
 	private static final String PHOTO_URL_EX = "http://exhentai.org/s/%s/%d-%d";
@@ -408,10 +408,12 @@ public class DataLoader {
 		HttpPost httpPost = new HttpPost(String.format(FAVORITES_URL_EX, entry.getGalleryId(), entry.getToken()));
 		httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
 
+		String submitValue = favCat.equals("favdel") ? "Apply+Changes" : "Add+to+Favorites";
+
 		List<NameValuePair> nvps = new ArrayList<NameValuePair>();
 		nvps.add(new BasicNameValuePair("favcat", URLEncoder.encode(favCat, "utf-8")));
 		nvps.add(new BasicNameValuePair("favnote", URLEncoder.encode(favNote, "utf-8")));
-		nvps.add(new BasicNameValuePair("submit", "Apply+Changes"));
+		nvps.add(new BasicNameValuePair("submit", submitValue));
 
 		httpPost.setEntity(new UrlEncodedFormEntity(nvps));
 

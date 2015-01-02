@@ -15,6 +15,7 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -23,6 +24,7 @@ import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.api.ApiCallException;
 import com.ecchilon.sadpanda.api.DataLoader;
+import com.ecchilon.sadpanda.favorites.FavoritesTaskFactory;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerActivity;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerFragment;
 import com.ecchilon.sadpanda.search.SearchDialogFragment;
@@ -50,6 +52,11 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	}
 
 	private static final int GALLERY_BATCH_SIZE = 25;
+
+	private static final int ADD_MENU_ID = 12414;
+	private static final int REMOVE_MENU_ID = 14252345;
+
+	private static final String MENU_INFO_POS_KEY = "menuInfoPosKey";
 
 	private static final String STORED_ENTRIES_KEY = "OverviewStoredEntries";
 	private static final String STORED_POSITION_KEY = "OverviewStoredPosition";
@@ -79,6 +86,9 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 	@Inject
 	private DataLoader mDataLoader;
+
+	@Inject
+	private FavoritesTaskFactory mTaskFactory;
 
 	private String mQueryUrl;
 	private SearchType mSearchType;
@@ -111,7 +121,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		super.onCreateOptionsMenu(menu, inflater);
 
 		inflater.inflate(R.menu.overview, menu);
-		if(mSearchType == SearchType.NONE) {
+		if (mSearchType == SearchType.NONE) {
 			menu.removeItem(R.id.action_search);
 		}
 	}
@@ -126,7 +136,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	public void onViewCreated(View view, Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 
-		if(savedInstanceState == null) {
+		if (savedInstanceState == null) {
 			mAdapter = new OverviewAdapter();
 			mListView.setAdapter(mAdapter);
 			mListView.setHasMoreItems(true);
@@ -135,7 +145,8 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 			List<GalleryEntry> entries;
 			try {
 				entries = mObjectMapper.readValue(savedInstanceState.getString(STORED_ENTRIES_KEY),
-						new TypeReference<List<GalleryEntry>>() {});
+						new TypeReference<List<GalleryEntry>>() {
+						});
 			}
 			catch (IOException e) {
 				entries = Lists.newArrayList();
@@ -147,7 +158,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 			mListView.setHasMoreItems(savedInstanceState.getBoolean(STORED_MORE_ITEMS_KEY, true));
 		}
 
-		if(mAdapter.getCount() == 0 && !mListView.hasMoreItems()) {
+		if (mAdapter.getCount() == 0 && !mListView.hasMoreItems()) {
 			showEmpty();
 		}
 		else {
@@ -158,10 +169,22 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		mListView.setPagingableListener(this);
 		mListView.setOnScrollListener(new PagedOnScrollListener());
 
-		registerForContextMenu(mListView);
-		if(mRefreshLayout != null) {
+
+		if (mRefreshLayout != null) {
 			mRefreshLayout.setOnRefreshListener(this);
 		}
+	}
+
+	@Override
+	public void onStart() {
+		super.onStart();
+		registerForContextMenu(mListView);
+	}
+
+	@Override
+	public void onPause() {
+		super.onPause();
+		unregisterForContextMenu(mListView);
 	}
 
 	@Override
@@ -205,22 +228,51 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
 		if (v == mListView) {
-			int position = ((AdapterView.AdapterContextMenuInfo) menuInfo).position;
-			GalleryEntry entry = mAdapter.getItem(position);
-			menu.add(0, 0, 0, R.string.add_bookmark).setEnabled(false);
+			SubMenu favorites = menu.addSubMenu(0, ADD_MENU_ID, 0, R.string.add_to_favorites);
+
+			// This uses an intent to store the position because google refuses to fix bugs:
+			// https://code.google.com/p/android/issues/detail?id=7139
+			Intent posIntent = getPositionIntent((AdapterView.AdapterContextMenuInfo) menuInfo);
+			for (int i = 0; i < 10; i++) {
+				favorites.add(0, i, 0, Integer.toString(i)).setIntent(posIntent);
+			}
+			menu.add(0, REMOVE_MENU_ID, 0, R.string.remove_bookmark);
 		}
+	}
+
+	private Intent getPositionIntent(AdapterView.AdapterContextMenuInfo menuInfo) {
+		Intent posIntent = new Intent();
+		posIntent.putExtra(MENU_INFO_POS_KEY, menuInfo.position);
+		return posIntent;
 	}
 
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
-			case 0:
-				AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-				GalleryEntry entry = mAdapter.getItem(info.position);
-				//TODO add bookmark
-		}
+		//because #onContextItemSelected also gets triggered on invisible fragments...
+		if (getUserVisibleHint()) {
+			switch (item.getItemId()) {
+				case ADD_MENU_ID:
+					// Add menu id itself gets ignored
+					return true;
+				case REMOVE_MENU_ID:
+					AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+					GalleryEntry entry = mAdapter.getItem(info.position);
+					mTaskFactory.getRemoveFavoriteTask(entry).execute();
+					return true;
+				default:
+					// The item id indicates which category to add to
+					// See #onCreateContextMenu comment as to why intent is used
+					int pos = item.getIntent().getIntExtra(MENU_INFO_POS_KEY, -1);
+					if (pos == -1) {
+						throw new IllegalArgumentException("Gallery item position was not set for this menu item!");
+					}
 
-		return super.onContextItemSelected(item);
+					GalleryEntry addEntry = mAdapter.getItem(pos);
+					mTaskFactory.getAddFavoriteTask(addEntry, item.getItemId(), null).execute();
+					return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
@@ -268,7 +320,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 			protected void onPostExecute(AsyncTaskResult<List<GalleryEntry>> entryList) {
 				super.onPostExecute(entryList);
 
-				if(mRefreshLayout != null) {
+				if (mRefreshLayout != null) {
 					mRefreshLayout.setRefreshing(false);
 				}
 
@@ -277,7 +329,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 							entryList.getResult());
 				}
 
-				if(mAdapter.getCount() == 0) {
+				if (mAdapter.getCount() == 0) {
 					showEmpty();
 				}
 
@@ -317,9 +369,10 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 			int newDisplayedPage = firstVisibleItem / GALLERY_BATCH_SIZE;
 
-			if(newDisplayedPage != mCurrentDisplayedPage) {
+			if (newDisplayedPage != mCurrentDisplayedPage) {
 				mCurrentDisplayedPage = newDisplayedPage;
-				((ActionBarActivity)getActivity()).getSupportActionBar().setSubtitle(mSubTitle + (mCurrentDisplayedPage + 1));
+				((ActionBarActivity) getActivity()).getSupportActionBar()
+						.setSubtitle(mSubTitle + (mCurrentDisplayedPage + 1));
 			}
 		}
 	}

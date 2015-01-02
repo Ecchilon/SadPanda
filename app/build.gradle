@@ -22,22 +22,25 @@ android {
         exclude 'META-INF/LICENSE'
         exclude 'META-INF/NOTICE'
         exclude 'META-INF/ASL2.0'
+        exclude 'META-INF/DEPENDENCIES'
     }
 }
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
 
-    provided 'org.projectlombok:lombok:1.12.6'
-    provided 'org.roboguice:roboblender:3.0'
-
     compile project(':paging-listview')
     compile project(':viewpager-indicator')
 
-    compile 'com.google.guava:guava:18.0'
-    compile 'org.roboguice:roboguice:3.0'
+    provided 'org.projectlombok:lombok:1.12.6'
+    provided 'org.roboguice:roboblender:3.0'
+
     compile 'com.android.support:support-v4:21.0.3'
     compile 'com.android.support:appcompat-v7:21.0.3'
+
+    compile 'com.google.guava:guava:18.0'
+    compile 'org.roboguice:roboguice:3.0.1'
+
     compile 'org.apache.commons:commons-lang3:3.1'
     compile 'com.squareup.picasso:picasso:2.4.0'
     compile 'org.codehaus.jackson:jackson-mapper-asl:1.9.13'
