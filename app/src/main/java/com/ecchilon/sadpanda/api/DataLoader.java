@@ -3,7 +3,6 @@ package com.ecchilon.sadpanda.api;
 import static com.ecchilon.sadpanda.util.NetUtils.assertNotMainThread;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
@@ -16,7 +15,6 @@ import android.support.annotation.NonNull;
 import com.ecchilon.sadpanda.imageviewer.ImageEntry;
 import com.ecchilon.sadpanda.overview.Category;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
-import com.ecchilon.sadpanda.util.NetUtils;
 import com.google.inject.Inject;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.http.HttpEntity;
@@ -49,12 +47,13 @@ public class DataLoader {
 	private static final String API_URL_EX = "http://exhentai.org/api.php";
 	private static final String GALLERY_URL_EX = "http://exhentai.org/g/%d/%s";
 	private static final String PHOTO_URL_EX = "http://exhentai.org/s/%s/%d-%d";
+	private static final String GALLERY_PATTERN = "http://(g\\.e-|ex)hentai\\.org/g/(\\d+)/(\\w+)/";
 
 	private static final Pattern pPhotoUrl = Pattern.compile("http://(g\\.e-|ex)hentai\\.org/s/(\\w+?)/(\\d+)-(\\d+)");
 	private static final Pattern pShowkey = Pattern.compile("var showkey.*=.*\"([\\w-]+?)\";");
 	private static final Pattern pImageSrc = Pattern.compile("<img id=\"img\" src=\"(.+)/(.+?)\"");
-	private static final Pattern pGalleryURL =
-			Pattern.compile("<a href=\"http://(g\\.e-|ex)hentai\\.org/g/(\\d+)/(\\w+)/\" onmouseover");
+	private static final Pattern pGalleryHref = Pattern.compile("<a href=\"" + GALLERY_PATTERN + "\" onmouseover");
+	private static final Pattern pGalleryUrl = Pattern.compile(GALLERY_PATTERN);
 
 	private final HttpClient mHttpClient;
 	private final HttpContext mHttpContext;
@@ -266,7 +265,7 @@ public class DataLoader {
 			}
 			HttpResponse response = getHttpResponse(httpGet);
 			String html = readResponse(response);
-			Matcher matcher = pGalleryURL.matcher(html);
+			Matcher matcher = pGalleryHref.matcher(html);
 			JSONArray gidlist = new JSONArray();
 
 			while (matcher.find()) {
@@ -356,6 +355,19 @@ public class DataLoader {
 		}
 		catch (JSONException e) {
 			throw new ApiCallException(ApiErrorCode.JSON_ERROR, e);
+		}
+	}
+
+	public GalleryEntry getGallery(String url) throws ApiCallException {
+		Matcher matcher = pGalleryUrl.matcher(url);
+
+		if(matcher.find()) {
+			long id = Long.parseLong(matcher.group(2));
+			String token = matcher.group(3);
+			return getGallery(id, token);
+		}
+		else {
+			throw new ApiCallException(ApiErrorCode.TOKEN_OR_PAGE_INVALID);
 		}
 	}
 

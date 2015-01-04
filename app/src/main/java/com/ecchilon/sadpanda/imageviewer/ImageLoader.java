@@ -1,20 +1,12 @@
 package com.ecchilon.sadpanda.imageviewer;
 
-import android.content.Context;
+import java.util.List;
+
 import android.util.Log;
 import android.util.SparseArray;
-
-import com.ecchilon.sadpanda.api.ApiErrorCode;
 import com.ecchilon.sadpanda.api.DataLoader;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
-import com.google.inject.Inject;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import roboguice.RoboGuice;
-import roboguice.util.SafeAsyncTask;
+import com.ecchilon.sadpanda.util.AsyncResultTask;
 
 /**
  * Created by Alex on 21-9-2014.
@@ -23,7 +15,7 @@ public class ImageLoader {
 
     public interface ImageListener {
         void onLoad(ImageEntry entry);
-        void onError(ApiErrorCode errorCode);
+        void onError(Exception exception);
     }
 
     private final DataLoader mDataLoader;
@@ -42,18 +34,19 @@ public class ImageLoader {
         new ImageLoadTask(listener, page).execute();
     }
 
-    private class ImageLoadTask extends SafeAsyncTask<ImageEntry> {
+    private class ImageLoadTask extends AsyncResultTask<Void, Void, ImageEntry> {
 
         private final ImageListener mListener;
         private final int page;
 
         public ImageLoadTask(ImageListener listener, int page) {
+            super(false);
             this.mListener = listener;
             this.page = page;
         }
 
         @Override
-        public ImageEntry call() throws Exception {
+        public ImageEntry call(Void... params) throws Exception{
             ImageEntry entry = mEntryMap.get(page);
 
             if(entry == null) {
@@ -66,6 +59,7 @@ public class ImageLoader {
                 } else {
                     synchronized (loadingPage) {
                         loadingPage.wait();
+
                     }
                     //Entry has been loaded while we were sleeping
                     entry = mEntryMap.get(page);
@@ -97,8 +91,13 @@ public class ImageLoader {
         }
 
         @Override
-        protected void onSuccess(ImageEntry entry) throws Exception {
-            mListener.onLoad(entry);
+        protected void onSuccess(ImageEntry imageEntry) {
+            mListener.onLoad(imageEntry);
+        }
+
+        @Override
+        protected void onError(Exception e) {
+            mListener.onError(e);
         }
     }
 }

@@ -50,7 +50,7 @@ public class ExhentaiModule extends AbstractModule {
         bind(ExhentaiAuth.class).in(Singleton.class);
 
         Picasso.Builder builder = new Picasso.Builder(mContext);
-        builder.listener(new PicassoListener());
+        builder.listener(new SadPandaApp.PicassoListener());
 
         Picasso.setSingletonInstance(builder.build());
     }
@@ -81,10 +81,5 @@ public class ExhentaiModule extends AbstractModule {
         return context;
     }
 
-    private class PicassoListener implements Picasso.Listener {
-        @Override
-        public void onImageLoadFailed(Picasso picasso, Uri uri, Exception exception) {
-            Log.e("Picasso", "Failed to load image for " + uri.toString(), exception);
-        }
-    }
+
 }

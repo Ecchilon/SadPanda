@@ -28,7 +28,7 @@ import com.ecchilon.sadpanda.favorites.FavoritesTaskFactory;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerActivity;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerFragment;
 import com.ecchilon.sadpanda.search.SearchDialogFragment;
-import com.ecchilon.sadpanda.util.AsyncTaskResult;
+import com.ecchilon.sadpanda.util.AsyncResultTask;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.paging.listview.PagingListView;
@@ -44,6 +44,8 @@ import roboguice.inject.InjectView;
  */
 public class OverviewFragment extends RoboFragment implements AbsListView.OnItemClickListener, SwipeRefreshLayout
 		.OnRefreshListener, PagingListView.Pagingable {
+
+	private static final String TAG = "OverviewFragment";
 
 	public enum SearchType {
 		NONE,
@@ -301,39 +303,33 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 	@Override
 	public void onLoadMoreItems() {
-		new AsyncTask<Void, Void, AsyncTaskResult<List<GalleryEntry>>>() {
+		new AsyncResultTask<Void, Void, List<GalleryEntry>>(false) {
 
 			@Override
-			protected AsyncTaskResult<List<GalleryEntry>>
-
-			doInBackground(Void... params) {
-				try {
-					List<GalleryEntry> result = mDataLoader.getGalleryIndex(mQueryUrl, mCurrentPage++);
-					return new AsyncTaskResult<List<GalleryEntry>>(result);
-				}
-				catch (ApiCallException e) {
-					return new AsyncTaskResult<List<GalleryEntry>>(e);
-				}
+			protected List<GalleryEntry> call(Void... params) throws Exception{
+				return mDataLoader.getGalleryIndex(mQueryUrl, mCurrentPage++);
 			}
 
 			@Override
-			protected void onPostExecute(AsyncTaskResult<List<GalleryEntry>> entryList) {
-				super.onPostExecute(entryList);
-
+			protected void onSuccess(List<GalleryEntry> entryList) {
 				if (mRefreshLayout != null) {
 					mRefreshLayout.setRefreshing(false);
 				}
 
-				if (entryList.isSuccessful()) {
-					mListView.onFinishLoading(entryList.getResult().size() >= GALLERY_BATCH_SIZE,
-							entryList.getResult());
-				}
+				mListView.onFinishLoading(entryList.size() >= GALLERY_BATCH_SIZE,
+						entryList);
 
 				if (mAdapter.getCount() == 0) {
 					showEmpty();
 				}
 
 				//TODO show reload for page on failure
+			}
+
+			@Override
+			protected void onError(Exception e) {
+				Log.e(TAG, "Failed to load gallery index", e);
+				showEmpty();
 			}
 		}.execute();
 	}

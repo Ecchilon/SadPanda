@@ -24,7 +24,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.ecchilon.sadpanda.R;
-import com.ecchilon.sadpanda.util.AsyncTaskResult;
 import com.google.inject.Inject;
 
 import roboguice.fragment.RoboDialogFragment;

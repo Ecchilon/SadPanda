@@ -13,8 +13,10 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.SadPandaApp;
 import com.ecchilon.sadpanda.api.ApiErrorCode;
 import com.squareup.picasso.Callback;
+import com.squareup.picasso.Downloader;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.RequestCreator;
 import roboguice.fragment.RoboFragment;
@@ -139,13 +141,21 @@ public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader
 
 	@Override
 	public void onError() {
+		if(SadPandaApp.getLastException() instanceof Downloader.ResponseException) {
+			failureText.setText(R.string.image_not_found);
+		}
+		else {
+			failureText.setText(R.string.image_loading_failed);
+		}
+
 		failureText.setVisibility(View.VISIBLE);
+
 		loadingBar.setVisibility(View.GONE);
 	}
 
 	@Override
-	public void onError(ApiErrorCode code) {
+	public void onError(Exception e) {
 		failureText.setVisibility(View.VISIBLE);
-		Log.e("ScreenSlidePageFragment", code.name());
+		Log.e("ScreenSlidePageFragment", "Error loading image", e);
 	}
 }

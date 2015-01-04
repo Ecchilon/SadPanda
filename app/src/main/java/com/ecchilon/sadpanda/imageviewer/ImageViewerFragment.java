@@ -137,11 +137,11 @@ public class ImageViewerFragment extends RoboFragment {
 
 		ImageLoader loader = mImageLoaderFactory.getImageLoader(galleryEntry);
 
-		PagerAdapter mPagerAdapter = new ScreenSlidePagerAdapter(
-				getActivity().getSupportFragmentManager(), loader, galleryEntry, createArguments());
+		PagerAdapter mPagerAdapter =
+				new ScreenSlidePagerAdapter(getChildFragmentManager(), loader, galleryEntry, createArguments());
 		mPager.setAdapter(mPagerAdapter);
 		mPager.setGestureDetector(new GestureDetector(getActivity(), new SingleTapListener()));
-		mPager.setOffscreenPageLimit(5);
+		mPager.setOffscreenPageLimit(2);
 	}
 
 	private Bundle createArguments() {

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.ecchilon.sadpanda" >
 
     <!-- To access Google+ APIs: -->
@@ -28,14 +29,31 @@
             android:label="@string/title_activity_overview"
             android:parentActivityName="com.ecchilon.sadpanda.MainActivity"
             android:theme="@style/SwipeBackTheme"
-            android:windowSoftInputMode="adjustPan" >+
+            android:windowSoftInputMode="adjustPan"
+            tools:ignore="UnusedAttribute">+
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.ecchilon.sadpanda.MainActivity" />
         </activity>
         <activity
             android:name="com.ecchilon.sadpanda.imageviewer.ImageViewerActivity"
-            android:theme="@style/AppTheme.CustomActionBarTheme" />
+            android:theme="@style/AppTheme.CustomActionBarTheme"
+            android:parentActivityName="com.ecchilon.sadpanda.MainActivity"
+            tools:ignore="UnusedAttribute">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:host="exhentai.org"
+                    android:scheme="http"
+                    android:pathPattern="/g/.*/.*"
+                    />
+            </intent-filter>
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.ecchilon.sadpanda.MainActivity" />
+        </activity>
         <activity
             android:name="com.ecchilon.sadpanda.preferences.PandaPreferenceActivity"
             android:label="@string/title_activity_panda_preference" >

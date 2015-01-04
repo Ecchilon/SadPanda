@@ -11,6 +11,7 @@
     <string name="title_activity_overview">OverviewActivity</string>
     <string name="hello_world">Hello world!</string>
     <string name="image_loading_failed">Failed to load image</string>
+    <string name="image_not_found">Image was not found</string>
     <string name="image_description">Image for this page</string>
     <string name="refresh_menu">Refresh</string>
     <string name="query_error">Error searching for this query</string>
