@@ -19,84 +19,89 @@ import roboguice.inject.ContentView;
 @ContentView(R.layout.activity_search)
 public class SearchActivity extends RoboActionBarActivity implements SwipeBackActivityBase, OnSearchSubmittedListener {
 
-    public static final String QUERY_KEY = "ExhentaiQuery";
+	public static final String QUERY_KEY = "ExhentaiQuery";
 
-    private SwipeBackActivityHelper mHelper;
+	private SwipeBackActivityHelper mHelper;
 
-    @Inject
-    private ExhentaiAuth mExhentaiAuth;
+	@Inject
+	private ExhentaiAuth mExhentaiAuth;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        mHelper = new SwipeBackActivityHelper(this);
-        mHelper.onActivityCreate();
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+		mHelper = new SwipeBackActivityHelper(this);
+		mHelper.onActivityCreate();
 
-        if (savedInstanceState == null) {
-            String url = getIntent().getStringExtra(OverviewFragment.URL_KEY);
-            String query = getIntent().getStringExtra(QUERY_KEY);
-            onSearchSubmitted(url, query);
-        }
-    }
+		//if the image viewer activity crashes the fragment gets restored correctly,
+		// but the actionbar (and thus its title) doesn't. Hence we always set it
+		String query = getIntent().getStringExtra(QUERY_KEY);
+		getSupportActionBar().setTitle(query);
 
-    @Override
-    public View findViewById(int id) {
-        View v = super.findViewById(id);
-        if (v == null && mHelper != null)
-            return mHelper.findViewById(id);
-        return v;
-    }
+		if (savedInstanceState == null) {
+			String url = getIntent().getStringExtra(OverviewFragment.URL_KEY);
+			onSearchSubmitted(url, query);
+		}
+	}
 
-    @Override
-    protected void onPostCreate(Bundle savedInstanceState) {
-        super.onPostCreate(savedInstanceState);
-        mHelper.onPostCreate();
-    }
+	@Override
+	public View findViewById(int id) {
+		View v = super.findViewById(id);
+		if (v == null && mHelper != null) {
+			return mHelper.findViewById(id);
+		}
+		return v;
+	}
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                scrollToFinishActivity();
-                return true;
-        }
+	@Override
+	protected void onPostCreate(Bundle savedInstanceState) {
+		super.onPostCreate(savedInstanceState);
+		mHelper.onPostCreate();
+	}
 
-        return super.onOptionsItemSelected(item);
-    }
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+			case android.R.id.home:
+				scrollToFinishActivity();
+				return true;
+		}
 
-    @Override
-    public SwipeBackLayout getSwipeBackLayout() {
-        return mHelper.getSwipeBackLayout();
-    }
+		return super.onOptionsItemSelected(item);
+	}
 
-    @Override
-    public void setSwipeBackEnable(boolean enable) {
-        getSwipeBackLayout().setEnableGesture(enable);
-    }
+	@Override
+	public SwipeBackLayout getSwipeBackLayout() {
+		return mHelper.getSwipeBackLayout();
+	}
 
-    @Override
-    public void scrollToFinishActivity() {
-        Utils.convertActivityToTranslucent(this);
-        getSwipeBackLayout().scrollToFinishActivity();
-    }
+	@Override
+	public void setSwipeBackEnable(boolean enable) {
+		getSwipeBackLayout().setEnableGesture(enable);
+	}
 
-    @Override
-    public void onSearchSubmitted(String url, String query) {
-        Fragment fragment;
+	@Override
+	public void scrollToFinishActivity() {
+		Utils.convertActivityToTranslucent(this);
+		getSwipeBackLayout().scrollToFinishActivity();
+	}
 
-        getSupportActionBar().setTitle(query);
+	@Override
+	public void onSearchSubmitted(String url, String query) {
+		Fragment fragment;
 
-        if(mExhentaiAuth.isLoggedIn()) {
-            fragment = OverviewFragment.newInstance(url, OverviewFragment.SearchType.ADVANCED);
-        }
-        else {
-            fragment = ErrorFragment.newInstance(R.string.login_request);
-        }
+		getSupportActionBar().setTitle(query);
 
-        getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.container, fragment)
-                .commit();
-    }
+		if (mExhentaiAuth.isLoggedIn()) {
+			fragment = OverviewFragment.newInstance(url, OverviewFragment.SearchType.ADVANCED);
+		}
+		else {
+			fragment = ErrorFragment.newInstance(R.string.login_request);
+		}
+
+		getSupportFragmentManager()
+				.beginTransaction()
+				.replace(R.id.container, fragment)
+				.commit();
+	}
 }
