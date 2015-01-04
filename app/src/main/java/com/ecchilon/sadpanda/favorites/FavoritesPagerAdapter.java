@@ -19,14 +19,8 @@ public class FavoritesPagerAdapter extends FragmentStatePagerAdapter {
 
 	@Override
 	public Fragment getItem(int i) {
-		Bundle args = new Bundle();
-		args.putString(OverviewFragment.URL_KEY, String.format(FAVORITES_URL, i));
-		args.putSerializable(OverviewFragment.SEARCH_TYPE_KEY, OverviewFragment.SearchType.SIMPLE);
-
-		OverviewFragment fragment = new OverviewFragment();
-		fragment.setArguments(args);
-
-		return fragment;
+		return OverviewFragment.newInstance(String.format(FAVORITES_URL, i), true, null,
+				OverviewFragment.SearchType.SIMPLE);
 	}
 
 	@Override
@@ -36,6 +30,6 @@ public class FavoritesPagerAdapter extends FragmentStatePagerAdapter {
 
 	@Override
 	public CharSequence getPageTitle(int position) {
-		return mFavoritesTitle  + " " + position;
+		return mFavoritesTitle + " " + position;
 	}
 }

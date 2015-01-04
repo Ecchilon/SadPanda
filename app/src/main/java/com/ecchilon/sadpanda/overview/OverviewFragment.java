@@ -3,8 +3,8 @@ package com.ecchilon.sadpanda.overview;
 import java.io.IOException;
 import java.util.List;
 
+import android.content.Context;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -15,20 +15,23 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.SubMenu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
-import com.ecchilon.sadpanda.api.ApiCallException;
 import com.ecchilon.sadpanda.api.DataLoader;
 import com.ecchilon.sadpanda.favorites.FavoritesTaskFactory;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerActivity;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerFragment;
+import com.ecchilon.sadpanda.menu.FavoritesMenu;
+import com.ecchilon.sadpanda.menu.GalleryMenu;
+import com.ecchilon.sadpanda.search.SearchController;
 import com.ecchilon.sadpanda.search.SearchDialogFragment;
+import com.ecchilon.sadpanda.util.AddFavoriteCallback;
 import com.ecchilon.sadpanda.util.AsyncResultTask;
+import com.ecchilon.sadpanda.util.RemoveFavoriteCallback;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.paging.listview.PagingListView;
@@ -43,7 +46,8 @@ import roboguice.inject.InjectView;
  * ListView with a GridView. interface.
  */
 public class OverviewFragment extends RoboFragment implements AbsListView.OnItemClickListener, SwipeRefreshLayout
-		.OnRefreshListener, PagingListView.Pagingable {
+		.OnRefreshListener, PagingListView.Pagingable, GalleryMenu.MenuItemSelectedListener, FavoritesMenu
+		.FavoriteCategorySelectedListener {
 
 	private static final String TAG = "OverviewFragment";
 
@@ -57,14 +61,14 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 	private static final int ADD_MENU_ID = 12414;
 	private static final int REMOVE_MENU_ID = 14252345;
-
-	private static final String MENU_INFO_POS_KEY = "menuInfoPosKey";
+	private static final int SHOW_GALLERY_ID = 1234974;
 
 	private static final String STORED_ENTRIES_KEY = "OverviewStoredEntries";
 	private static final String STORED_POSITION_KEY = "OverviewStoredPosition";
 	private static final String STORED_PAGE_KEY = "OverviewStoredPage";
 	private static final String STORED_MORE_ITEMS_KEY = "OverviewStoredHasMoreItems";
 
+	public static final String IS_FAVORITE_LIST_KEY = "favoriteListKey";
 	public static final String SEARCH_TYPE_KEY = "SearchTypeKey";
 	public static final String URL_KEY = "ExhentaiURL";
 
@@ -97,11 +101,23 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 	private int mCurrentPage = 0;
 
-	public static OverviewFragment newInstance(@NonNull String url, SearchType searchType) {
+	private GalleryMenu mGalleryMenu;
+	private FavoritesMenu mFavoritesMenu;
+
+	private boolean mIsFavorite;
+
+	private SearchController mSearchController = new SearchController();
+
+	public static OverviewFragment newInstance(@NonNull String url, boolean isFavorite, @Nullable String query,
+			SearchType searchType) {
 		OverviewFragment fragment = new OverviewFragment();
 		if (url != null) {
 			Bundle args = new Bundle();
 			args.putString(URL_KEY, url);
+			args.putBoolean(IS_FAVORITE_LIST_KEY, isFavorite);
+			if (query != null) {
+				args.putString(SearchActivity.QUERY_KEY, query);
+			}
 			args.putSerializable(SEARCH_TYPE_KEY, searchType);
 			fragment.setArguments(args);
 		}
@@ -114,6 +130,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		super.onCreate(savedInstanceState);
 		setHasOptionsMenu(true);
 
+		mIsFavorite = getArguments().getBoolean(IS_FAVORITE_LIST_KEY);
 		mQueryUrl = getArguments().getString(URL_KEY);
 		mSearchType = (SearchType) getArguments().getSerializable(SEARCH_TYPE_KEY);
 	}
@@ -171,22 +188,11 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		mListView.setPagingableListener(this);
 		mListView.setOnScrollListener(new PagedOnScrollListener());
 
-
 		if (mRefreshLayout != null) {
 			mRefreshLayout.setOnRefreshListener(this);
 		}
-	}
 
-	@Override
-	public void onStart() {
-		super.onStart();
 		registerForContextMenu(mListView);
-	}
-
-	@Override
-	public void onPause() {
-		super.onPause();
-		unregisterForContextMenu(mListView);
 	}
 
 	@Override
@@ -222,6 +228,10 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		Bundle args = new Bundle();
 		args.putSerializable(SEARCH_TYPE_KEY, mSearchType);
 
+		if (getArguments().containsKey(SearchActivity.QUERY_KEY)) {
+			args.putString(SearchActivity.QUERY_KEY, getArguments().getString(SearchActivity.QUERY_KEY));
+		}
+
 		SearchDialogFragment fragment = new SearchDialogFragment();
 		fragment.setArguments(args);
 		fragment.show(getFragmentManager(), "Search");
@@ -230,51 +240,59 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
 		if (v == mListView) {
-			SubMenu favorites = menu.addSubMenu(0, ADD_MENU_ID, 0, R.string.add_to_favorites);
-
-			// This uses an intent to store the position because google refuses to fix bugs:
-			// https://code.google.com/p/android/issues/detail?id=7139
-			Intent posIntent = getPositionIntent((AdapterView.AdapterContextMenuInfo) menuInfo);
-			for (int i = 0; i < 10; i++) {
-				favorites.add(0, i, 0, Integer.toString(i)).setIntent(posIntent);
+			if (!mIsFavorite) {
+				menu.add(0, ADD_MENU_ID, 0, R.string.add_to_favorites);
 			}
-			menu.add(0, REMOVE_MENU_ID, 0, R.string.remove_bookmark);
+			menu.add(0, REMOVE_MENU_ID, 0, R.string.remove_favorite);
+			menu.add(0, SHOW_GALLERY_ID, 0, R.string.view_entry);
 		}
-	}
-
-	private Intent getPositionIntent(AdapterView.AdapterContextMenuInfo menuInfo) {
-		Intent posIntent = new Intent();
-		posIntent.putExtra(MENU_INFO_POS_KEY, menuInfo.position);
-		return posIntent;
 	}
 
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		//because #onContextItemSelected also gets triggered on invisible fragments...
 		if (getUserVisibleHint()) {
+			AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
+			GalleryEntry entry = mAdapter.getItem(info.position);
 			switch (item.getItemId()) {
-				case ADD_MENU_ID:
-					// Add menu id itself gets ignored
+				case SHOW_GALLERY_ID:
+					mGalleryMenu = new GalleryMenu(entry, getActivity());
+					mGalleryMenu.setOnMenuItemSelectedListener(this);
+					mGalleryMenu.show();
 					return true;
 				case REMOVE_MENU_ID:
-					AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-					GalleryEntry entry = mAdapter.getItem(info.position);
-					mTaskFactory.getRemoveFavoriteTask(entry).execute();
-					return true;
-				default:
-					// The item id indicates which category to add to
-					// See #onCreateContextMenu comment as to why intent is used
-					int pos = item.getIntent().getIntExtra(MENU_INFO_POS_KEY, -1);
-					if (pos == -1) {
-						throw new IllegalArgumentException("Gallery item position was not set for this menu item!");
-					}
+					AsyncResultTask.Callback<GalleryEntry> callback = mIsFavorite ? new RemoveFavoriteOverviewCallback(
+							getActivity()) : new RemoveFavoriteCallback(getActivity());
 
-					GalleryEntry addEntry = mAdapter.getItem(pos);
-					mTaskFactory.getAddFavoriteTask(addEntry, item.getItemId(), null).execute();
+					mTaskFactory.getRemoveFavoriteTask(entry)
+							.setListener(callback)
+							.execute();
+					return true;
+				case ADD_MENU_ID:
+					mFavoritesMenu = new FavoritesMenu(entry, getActivity());
+					mFavoritesMenu.setFavoritesCategorySelectedListener(this);
+					mFavoritesMenu.show();
 					return true;
 			}
 		}
-		return false;
+		return super.onContextItemSelected(item);
+	}
+
+	@Override
+	public void onMenuItemSelected(String item, boolean uploader) {
+		String url = uploader ? mSearchController.getUploaderUrl(item) : mSearchController.getUrl(item);
+
+		Intent searchIntent = new Intent(getActivity(), SearchActivity.class);
+		searchIntent.putExtra(OverviewFragment.URL_KEY, url);
+		searchIntent.putExtra(SearchActivity.QUERY_KEY, item);
+		getActivity().startActivity(searchIntent);
+	}
+
+	@Override
+	public void onFavoriteCategorySelected(int category) {
+		mTaskFactory.getAddFavoriteTask(mFavoritesMenu.getEntry(), category, null)
+				.setListener(new AddFavoriteCallback(getActivity()))
+				.execute();
 	}
 
 	@Override
@@ -303,35 +321,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 	@Override
 	public void onLoadMoreItems() {
-		new AsyncResultTask<Void, Void, List<GalleryEntry>>(false) {
-
-			@Override
-			protected List<GalleryEntry> call(Void... params) throws Exception{
-				return mDataLoader.getGalleryIndex(mQueryUrl, mCurrentPage++);
-			}
-
-			@Override
-			protected void onSuccess(List<GalleryEntry> entryList) {
-				if (mRefreshLayout != null) {
-					mRefreshLayout.setRefreshing(false);
-				}
-
-				mListView.onFinishLoading(entryList.size() >= GALLERY_BATCH_SIZE,
-						entryList);
-
-				if (mAdapter.getCount() == 0) {
-					showEmpty();
-				}
-
-				//TODO show reload for page on failure
-			}
-
-			@Override
-			protected void onError(Exception e) {
-				Log.e(TAG, "Failed to load gallery index", e);
-				showEmpty();
-			}
-		}.execute();
+		new LoadItemsTask().execute();
 	}
 
 	private void showEmpty() {
@@ -370,6 +360,70 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 				((ActionBarActivity) getActivity()).getSupportActionBar()
 						.setSubtitle(mSubTitle + (mCurrentDisplayedPage + 1));
 			}
+		}
+	}
+
+	private class LoadItemsTask extends AsyncResultTask<Void, Void, List<GalleryEntry>> implements AsyncResultTask
+			.Callback<List<GalleryEntry>> {
+
+		public LoadItemsTask() {
+			super(false);
+			setListener(this);
+		}
+
+		@Override
+		protected List<GalleryEntry> call(Void... params) throws Exception {
+			return mDataLoader.getGalleryIndex(mQueryUrl, mCurrentPage++);
+		}
+
+		@Override
+		public void onSuccess(List<GalleryEntry> entryList) {
+			if (mRefreshLayout != null) {
+				mRefreshLayout.setRefreshing(false);
+			}
+
+			mListView.onFinishLoading(entryList.size() >= GALLERY_BATCH_SIZE,
+					entryList);
+
+			if (mAdapter.getCount() == 0) {
+				showEmpty();
+			}
+
+			//TODO show reload for page on failure
+		}
+
+		@Override
+		public void onError(Exception e) {
+			Log.e(TAG, "Failed to load gallery index", e);
+			showEmpty();
+		}
+	}
+
+	private class AddFavoriteOverviewCallback extends AddFavoriteCallback {
+
+		public AddFavoriteOverviewCallback(Context context) {
+			super(context);
+		}
+
+		@Override
+		public void onSuccess(GalleryEntry result) {
+			super.onSuccess(result);
+
+			onRefresh();
+		}
+	}
+
+	private class RemoveFavoriteOverviewCallback extends RemoveFavoriteCallback {
+
+		public RemoveFavoriteOverviewCallback(Context context) {
+			super(context);
+		}
+
+		@Override
+		public void onSuccess(GalleryEntry result) {
+			super.onSuccess(result);
+
+			onRefresh();
 		}
 	}
 }

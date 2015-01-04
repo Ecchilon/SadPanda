@@ -93,7 +93,7 @@ public class SearchActivity extends RoboActionBarActivity implements SwipeBackAc
 		getSupportActionBar().setTitle(query);
 
 		if (mExhentaiAuth.isLoggedIn()) {
-			fragment = OverviewFragment.newInstance(url, OverviewFragment.SearchType.ADVANCED);
+			fragment = OverviewFragment.newInstance(url, false, query, OverviewFragment.SearchType.ADVANCED);
 		}
 		else {
 			fragment = ErrorFragment.newInstance(R.string.login_request);

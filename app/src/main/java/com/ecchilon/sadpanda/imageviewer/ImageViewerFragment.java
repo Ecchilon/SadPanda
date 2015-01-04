@@ -4,10 +4,8 @@ import java.io.IOException;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Color;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.view.PagerAdapter;
@@ -22,7 +20,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.favorites.AddFavoriteTask;
+import com.ecchilon.sadpanda.favorites.FavoritesTaskFactory;
+import com.ecchilon.sadpanda.favorites.RemoveFavoriteTask;
+import com.ecchilon.sadpanda.menu.FavoritesMenu;
+import com.ecchilon.sadpanda.menu.GalleryMenu;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
+import com.ecchilon.sadpanda.overview.OverviewFragment;
+import com.ecchilon.sadpanda.overview.SearchActivity;
+import com.ecchilon.sadpanda.search.SearchController;
+import com.ecchilon.sadpanda.util.AddFavoriteCallback;
+import com.ecchilon.sadpanda.util.RemoveFavoriteCallback;
 import com.google.inject.Inject;
 import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.fragment.RoboFragment;
@@ -31,7 +39,11 @@ import roboguice.inject.InjectView;
 /**
  * Created by Alex on 21-9-2014.
  */
-public class ImageViewerFragment extends RoboFragment {
+public class ImageViewerFragment extends RoboFragment implements FavoritesMenu.FavoriteCategorySelectedListener,
+		GalleryMenu.MenuItemSelectedListener {
+
+	private static final String TAG = "ImageViewerFragment";
+
 	public interface VisibilityToggler {
 		void toggleVisibility(boolean delayUI);
 	}
@@ -57,8 +69,15 @@ public class ImageViewerFragment extends RoboFragment {
 	private ObjectMapper mObjectMapper;
 	@Inject
 	private ImageLoaderFactory mImageLoaderFactory;
+	@Inject
+	private FavoritesTaskFactory mFavoritesTaskFactory;
 
 	private VisibilityToggler mVisibilityToggler;
+
+	private GalleryEntry mGalleryEntry;
+
+	private GalleryMenu mGalleryMenu;
+	private FavoritesMenu mFavoritesMenu;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -74,25 +93,17 @@ public class ImageViewerFragment extends RoboFragment {
 	}
 
 	@Override
-	public void onPrepareOptionsMenu(Menu menu) {
-		MenuItem bookmark = menu.findItem(R.id.bookmark);
-		bookmark.setEnabled(false);
-
-		//TODO check if item is bookmarked
-		if (true) {
-			Drawable resIcon = getResources().getDrawable(R.drawable.ic_action_favorite);
-			resIcon.mutate().setColorFilter(Color.GRAY, PorterDuff.Mode.MULTIPLY);
-			bookmark.setIcon(resIcon);
-		}
-
-		super.onPrepareOptionsMenu(menu);
-	}
-
-	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
-			case R.id.bookmark:
-				//TODO add bookmark
+			case R.id.add_favorite:
+				mFavoritesMenu.show();
+				return true;
+			case R.id.remove_favorite:
+				RemoveFavoriteTask task = mFavoritesTaskFactory.getRemoveFavoriteTask(mGalleryEntry);
+				task.setListener(new RemoveFavoriteCallback(getActivity()));
+				task.execute();
+			case R.id.view_by:
+				mGalleryMenu.show();
 				return true;
 		}
 
@@ -124,9 +135,8 @@ public class ImageViewerFragment extends RoboFragment {
 
 		mVisibilityToggler.toggleVisibility(false);
 
-		GalleryEntry galleryEntry;
 		try {
-			galleryEntry = mObjectMapper.readValue(getArguments().getString(GALLERY_ITEM_KEY), GalleryEntry.class);
+			mGalleryEntry = mObjectMapper.readValue(getArguments().getString(GALLERY_ITEM_KEY), GalleryEntry.class);
 		}
 		catch (IOException e) {
 			Toast.makeText(getActivity(), R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
@@ -135,13 +145,36 @@ public class ImageViewerFragment extends RoboFragment {
 			return;
 		}
 
-		ImageLoader loader = mImageLoaderFactory.getImageLoader(galleryEntry);
+		mGalleryMenu = new GalleryMenu(mGalleryEntry, getActivity());
+		mGalleryMenu.setOnMenuItemSelectedListener(this);
+
+		mFavoritesMenu = new FavoritesMenu(mGalleryEntry, getActivity());
+		mFavoritesMenu.setFavoritesCategorySelectedListener(this);
+
+		ImageLoader loader = mImageLoaderFactory.getImageLoader(mGalleryEntry);
 
 		PagerAdapter mPagerAdapter =
-				new ScreenSlidePagerAdapter(getChildFragmentManager(), loader, galleryEntry, createArguments());
+				new ScreenSlidePagerAdapter(getChildFragmentManager(), loader, mGalleryEntry, createArguments());
 		mPager.setAdapter(mPagerAdapter);
 		mPager.setGestureDetector(new GestureDetector(getActivity(), new SingleTapListener()));
 		mPager.setOffscreenPageLimit(2);
+	}
+
+	@Override
+	public void onFavoriteCategorySelected(int category) {
+		AddFavoriteTask task = mFavoritesTaskFactory.getAddFavoriteTask(mGalleryEntry, category, null);
+		task.setListener(new AddFavoriteCallback(getActivity()));
+		task.execute();
+	}
+
+	@Override
+	public void onMenuItemSelected(String item, boolean uploader) {
+		SearchController controller = new SearchController();
+		String url = uploader ? controller.getUploaderUrl(item) : controller.getUrl(item);
+
+		Intent searchIntent = new Intent(getActivity(), SearchActivity.class);
+		searchIntent.putExtra(OverviewFragment.URL_KEY, url);
+		getActivity().startActivity(searchIntent);
 	}
 
 	private Bundle createArguments() {

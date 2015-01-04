@@ -21,6 +21,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
@@ -389,31 +390,30 @@ public class DataLoader {
 		}
 	}
 
-	public boolean removeGalleryFromFavorites(GalleryEntry entry) throws ApiCallException {
+	public void removeGalleryFromFavorites(GalleryEntry entry) throws ApiCallException {
 		try {
-
-			return updateFavorite("favdel", "", entry);
+			updateFavorite("favdel", "", entry);
 		}
 		catch (IOException e) {
 			throw new ApiCallException(ApiErrorCode.IO_ERROR, e);
 		}
 	}
 
-	public boolean addGalleryToFavorites(int favoritesCategory, String favNote,
+	public void addGalleryToFavorites(int favoritesCategory, String favNote,
 			GalleryEntry entry) throws ApiCallException {
 		try {
 			if (favNote == null) {
 				favNote = "";
 			}
 
-			return updateFavorite(Integer.toString(favoritesCategory), favNote, entry);
+			updateFavorite(Integer.toString(favoritesCategory), favNote, entry);
 		}
 		catch (IOException e) {
 			throw new ApiCallException(ApiErrorCode.IO_ERROR, e);
 		}
 	}
 
-	private boolean updateFavorite(@NonNull String favCat, @NonNull String favNote,
+	private void updateFavorite(@NonNull String favCat, @NonNull String favNote,
 			GalleryEntry entry) throws IOException {
 		assertNotMainThread();
 
@@ -432,7 +432,9 @@ public class DataLoader {
 		HttpResponse response;
 		response = getHttpResponse(httpPost);
 
-		return response.getStatusLine().getStatusCode() == HttpStatus.SC_OK;
+		if(response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+			throw new ClientProtocolException();
+		}
 	}
 
 	public JSONArray getGalleryTokenList(JSONArray pageList) throws ApiCallException {

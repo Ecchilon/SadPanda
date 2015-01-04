@@ -1,5 +1,7 @@
 package com.ecchilon.sadpanda.search;
 
+import static com.ecchilon.sadpanda.overview.OverviewFragment.*;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -20,6 +22,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.overview.SearchActivity;
 import com.google.common.collect.Lists;
 import roboguice.util.Strings;
 
@@ -33,7 +36,7 @@ public class SearchDialogFragment extends DialogFragment {
 
 	private OnSearchSubmittedListener mListener;
 
-	private SearchController mSearchController;
+	private SearchView mSearchView;
 
 	@NonNull
 	@Override
@@ -44,9 +47,13 @@ public class SearchDialogFragment extends DialogFragment {
 
 		final View searchView = LayoutInflater.from(getActivity()).inflate(R.layout.search_view, null);
 
-		mSearchController = new SearchController(searchView);
+		mSearchView = new SearchView(searchView);
 
 		HistoryEditText query = (HistoryEditText) searchView.findViewById(R.id.search_query);
+
+		if(getArguments().containsKey(SearchActivity.QUERY_KEY)) {
+			query.setText(getArguments().getString(SearchActivity.QUERY_KEY));
+		}
 
 		final List<String> history = getHistory();
 
@@ -55,22 +62,27 @@ public class SearchDialogFragment extends DialogFragment {
 
 		query.setAdapter(adapter);
 
-		searchView.findViewById(R.id.show_advanced).setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				View advancedView = getDialog().findViewById(R.id.advanced_view_container);
-				advancedView.setVisibility(advancedView.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
-			}
-		});
+		if(getSearchType(SearchType.ADVANCED) == SearchType.ADVANCED) {
+			searchView.findViewById(R.id.show_advanced).setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					View advancedView = getDialog().findViewById(R.id.advanced_view_container);
+					advancedView.setVisibility(advancedView.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
+				}
+			});
+		}
+		else {
+			searchView.findViewById(R.id.show_advanced).setVisibility(View.GONE);
+		}
 
 		builder.setView(searchView);
 
 		builder.setPositiveButton(R.string.action_search, new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
-				addToHistory(history, mSearchController.getQuery());
+				addToHistory(history, mSearchView.getQuery());
 
-				mListener.onSearchSubmitted(mSearchController.getUrl(), mSearchController.getQuery());
+				mListener.onSearchSubmitted(mSearchView.getUrl(), mSearchView.getQuery());
 				dismiss();
 			}
 		});
@@ -82,6 +94,15 @@ public class SearchDialogFragment extends DialogFragment {
 		});
 
 		return builder.create();
+	}
+
+	private SearchType getSearchType(SearchType defaultType) {
+		if(getArguments() != null && getArguments().containsKey(SEARCH_TYPE_KEY))
+		{
+			return (SearchType) getArguments().getSerializable(SEARCH_TYPE_KEY);
+		}
+
+		return defaultType;
 	}
 
 	@Override

@@ -14,7 +14,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.SadPandaApp;
-import com.ecchilon.sadpanda.api.ApiErrorCode;
+import com.ecchilon.sadpanda.util.AsyncResultTask;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Downloader;
 import com.squareup.picasso.Picasso;
@@ -26,7 +26,7 @@ import uk.co.senab.photoview.PhotoView;
 /**
  * Created by Alex on 1/24/14.
  */
-public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader.ImageListener, Callback {
+public class ScreenSlidePageFragment extends RoboFragment implements AsyncResultTask.Callback<ImageEntry>, Callback {
 
 	public static final String IMAGE_SCALE_KEY = "imageScaleKey";
 
@@ -126,12 +126,18 @@ public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader
 	}
 
 	@Override
-	public void onLoad(ImageEntry entry) {
+	public void onSuccess(ImageEntry entry) {
 		mImageEntry = entry;
 
 		if (mImageView != null && mImageEntry != null && mImageEntry.getSrc() != null) {
 			loadImage();
 		}
+	}
+
+	@Override
+	public void onError(Exception e) {
+		failureText.setVisibility(View.VISIBLE);
+		Log.e("ScreenSlidePageFragment", "Error loading image", e);
 	}
 
 	@Override
@@ -141,7 +147,7 @@ public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader
 
 	@Override
 	public void onError() {
-		if(SadPandaApp.getLastException() instanceof Downloader.ResponseException) {
+		if (SadPandaApp.getLastException() instanceof Downloader.ResponseException) {
 			failureText.setText(R.string.image_not_found);
 		}
 		else {
@@ -151,11 +157,5 @@ public class ScreenSlidePageFragment extends RoboFragment implements ImageLoader
 		failureText.setVisibility(View.VISIBLE);
 
 		loadingBar.setVisibility(View.GONE);
-	}
-
-	@Override
-	public void onError(Exception e) {
-		failureText.setVisibility(View.VISIBLE);
-		Log.e("ScreenSlidePageFragment", "Error loading image", e);
 	}
 }

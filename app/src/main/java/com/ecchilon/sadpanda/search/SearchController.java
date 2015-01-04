@@ -1,29 +1,16 @@
 package com.ecchilon.sadpanda.search;
 
-import android.net.Uri;
-import android.view.KeyEvent;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.Spinner;
-import android.widget.TextView;
+import java.util.List;
 
+import android.net.Uri;
 import com.ecchilon.sadpanda.R;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import java.util.List;
-
+import lombok.Data;
 import roboguice.util.Strings;
 
-/**
- * Created by Alex on 5-10-2014.
- */
-public class SearchController implements View.OnClickListener {
-
+@Data
+public class SearchController {
 	private static final String STAR_PARAM = "f_srdd";
 	private static final String SEARCH_PARAM = "f_search";
 	private static final String AUTHORITY = "exhentai.org";
@@ -61,107 +48,54 @@ public class SearchController implements View.OnClickListener {
 			new QueryObject("f_sdesc", "on", "", R.string.by_desc).setActive(false),
 			new QueryObject("f_sr", "on", "", R.string.by_star).setActive(false)).build();
 
-	private final List<QueryObject> mQueryParameters =
+
+	private final List<QueryObject> queryParameters =
 			Lists.newArrayListWithCapacity(QUERY_PARAMS.size() + CATEGORY_PARAMS.size());
-	private int mStars;
-	private final EditText mQueryView;
 
-	public SearchController(View searchView) {
-		attachQueryViews(searchView);
+	private int stars;
 
-		mQueryView = (EditText) searchView.findViewById(R.id.search_query);
-	}
-
-	public String getUrl() {
-		Uri.Builder builder = new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).path("/");
-		for (QueryObject query : mQueryParameters) {
-			if (!Strings.isEmpty(query.getValue())) {
-				builder.appendQueryParameter(query.getKey(), query.getValue());
-			}
-		}
-
-		String query = mQueryView.getText().toString();
-		if (query != null) {
-			builder.appendQueryParameter(SEARCH_PARAM, query);
-		}
-
-		builder.appendQueryParameter(STAR_PARAM, Integer.toString(mStars));
-
-		return builder.build().toString();
-	}
-
-	public String getQuery() {
-		return mQueryView.getText().toString();
-	}
-
-	private void attachQueryViews(View searchView) {
-
-		ViewGroup advancedSearch = (ViewGroup) searchView.findViewById(R.id.advanced_view);
-
+	public SearchController() {
 		for (CategoryObject entry : CATEGORY_PARAMS) {
 			CategoryObject copy = entry.copy();
-			mQueryParameters.add(copy);
-			SearchEntry entryView = new SearchEntry(advancedSearch.getContext(), copy);
-			entryView.setColor(copy.getColor());
-			entryView.setText(copy.getNameId());
-			advancedSearch.addView(entryView);
+			queryParameters.add(copy);
 		}
 
 		for (QueryObject entry : QUERY_PARAMS) {
 			QueryObject copy = entry.copy();
-			mQueryParameters.add(copy);
-			SearchEntry entryView = new SearchEntry(advancedSearch.getContext(), copy);
-			entryView.setText(copy.getNameId());
-			advancedSearch.addView(entryView);
+			queryParameters.add(copy);
+		}
+	}
+
+	public String getUrl(String query) {
+		Uri.Builder builder = new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).path("/");
+		for (QueryObject queryObj : queryParameters) {
+			if (!Strings.isEmpty(queryObj.getValue())) {
+				builder.appendQueryParameter(queryObj.getKey(), queryObj.getValue());
+			}
 		}
 
-		View star = View.inflate(advancedSearch.getContext(), R.layout.star_entry, advancedSearch);
+		builder.appendQueryParameter(SEARCH_PARAM, query);
 
-		Spinner spinner = (Spinner) star.findViewById(R.id.star_spinner);
+		builder.appendQueryParameter(STAR_PARAM, Integer.toString(stars));
 
-		ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(advancedSearch.getContext(),
-				R.array.star_count, android.R.layout.simple_spinner_item);
+		return builder.build().toString();
+	}
 
-		spinner.setAdapter(adapter);
-		spinner.setOnItemSelectedListener(new SpinnerClickListener());
+	public String getUploaderUrl(String uploader) {
+		Uri.Builder builder = new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).path("/uploader/" + uploader);
+		return builder.build().toString();
 	}
 
 	public void reset() {
 		int catSize = CATEGORY_PARAMS.size(), querySize = QUERY_PARAMS.size();
 		for (int i = 0; i < catSize; i++) {
-			mQueryParameters.get(i).setActive(CATEGORY_PARAMS.get(i).isActive());
+			queryParameters.get(i).setActive(CATEGORY_PARAMS.get(i).isActive());
 		}
 
 		for (int i = 0; i < querySize; i++) {
-			mQueryParameters.get(catSize + i).setActive(QUERY_PARAMS.get(i).isActive());
+			queryParameters.get(catSize + i).setActive(QUERY_PARAMS.get(i).isActive());
 		}
 
-		mStars = 0;
-		mQueryView.setText(null);
-	}
-
-	public void resetQuery() {
-		mQueryView.setText(null);
-	}
-
-	@Override
-	public void onClick(View v) {
-		if (v instanceof CheckBox) {
-			QueryObject object = (QueryObject) v.getTag();
-			object.setActive(((CheckBox) v).isChecked());
-		}
-	}
-
-	private class SpinnerClickListener implements AdapterView.OnItemSelectedListener {
-
-		@Override
-		public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-			mStars = position;
-		}
-
-		@Override
-		public void onNothingSelected(AdapterView<?> parent) {
-
-		}
+		stars = 0;
 	}
 }

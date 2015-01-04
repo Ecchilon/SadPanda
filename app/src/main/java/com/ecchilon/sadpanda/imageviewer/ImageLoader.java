@@ -13,11 +13,6 @@ import com.ecchilon.sadpanda.util.AsyncResultTask;
  */
 public class ImageLoader {
 
-    public interface ImageListener {
-        void onLoad(ImageEntry entry);
-        void onError(Exception exception);
-    }
-
     private final DataLoader mDataLoader;
     private final GalleryEntry mGalleryEntry;
 
@@ -30,18 +25,18 @@ public class ImageLoader {
         this.mGalleryEntry = entry;
     }
 
-    public void getImage(int page, ImageListener listener) {
-        new ImageLoadTask(listener, page).execute();
+    public void getImage(int page, AsyncResultTask.Callback<ImageEntry> listener) {
+        ImageLoadTask task = new ImageLoadTask(page);
+        task.setListener(listener);
+        task.execute();
     }
 
     private class ImageLoadTask extends AsyncResultTask<Void, Void, ImageEntry> {
 
-        private final ImageListener mListener;
         private final int page;
 
-        public ImageLoadTask(ImageListener listener, int page) {
+        public ImageLoadTask(int page) {
             super(false);
-            this.mListener = listener;
             this.page = page;
         }
 
@@ -88,16 +83,6 @@ public class ImageLoader {
             }
 
             return mDataLoader.getPhotoInfo(mGalleryEntry, entry);
-        }
-
-        @Override
-        protected void onSuccess(ImageEntry imageEntry) {
-            mListener.onLoad(imageEntry);
-        }
-
-        @Override
-        protected void onError(Exception e) {
-            mListener.onError(e);
         }
     }
 }

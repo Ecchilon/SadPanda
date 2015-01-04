@@ -58,12 +58,19 @@
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="action_example">Example action</string>
-    <string name="remove_bookmark">Remove from favorites</string>
+    <string name="remove_favorite">Remove from favorites</string>
     <string name="add_to_favorites">Add to favorites</string>
-    <string name="no_bookmarks">No bookmarks yet</string>
+    <string name="add_to">Add to…</string>
     <string name="entry_parsing_failure">Something went wrong trying to open the gallery</string>
     <string name="current_page">page</string>
     <string name="favorites">Favorites</string>
     <string name="nothing_here">Nothing here but you and me</string>
+    <string name="uploader">Uploader</string>
+    <string name="tag">Tag</string>
+    <string name="view_entry">View by…</string>
+    <string name="favorite_added">Added to favorites</string>
+    <string name="favorite_added_failed">Failed to add to favorites</string>
+    <string name="favorite_removed_failed">Failed to remove favorite</string>
+    <string name="favorite_removed">Removed from favorites</string>
 
 </resources>

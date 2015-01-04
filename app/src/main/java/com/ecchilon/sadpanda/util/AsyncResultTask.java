@@ -2,10 +2,21 @@ package com.ecchilon.sadpanda.util;
 
 import android.os.AsyncTask;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
+@Accessors(chain = true)
 public abstract class AsyncResultTask<Params, Progress, Result> extends AsyncTask<Params, Progress, AsyncResultTask.AsyncTaskResult<Result>> {
 
+	public static interface Callback<T> {
+		void onSuccess(T result);
+		void onError(Exception e);
+	}
+
 	private final boolean mAllowNullResult;
+
+	@Setter
+	private Callback<Result> listener;
 
 	public AsyncResultTask(boolean allowNullResult) {
 		this.mAllowNullResult = allowNullResult;
@@ -25,22 +36,22 @@ public abstract class AsyncResultTask<Params, Progress, Result> extends AsyncTas
 	protected final void onPostExecute(AsyncTaskResult<Result> result) {
 		super.onPostExecute(result);
 
-		if(result.isSuccessful()) {
-			if(result.getResult() == null && !mAllowNullResult) {
-				onError(new IllegalArgumentException("Empty result not allowed"));
+		if(listener != null) {
+			if (result.isSuccessful()) {
+				if (result.getResult() == null && !mAllowNullResult) {
+					listener.onError(new IllegalArgumentException("Empty result not allowed"));
+				}
+				else {
+					listener.onSuccess(result.getResult());
+				}
 			}
 			else {
-				onSuccess(result.getResult());
+				listener.onError(result.getError());
 			}
-		}
-		else {
-			onError(result.getError());
 		}
 	}
 
 	protected abstract Result call(Params... params) throws Exception;
-	protected abstract void onSuccess(Result result);
-	protected abstract void onError(Exception e);
 
 	public static class AsyncTaskResult<T> {
 		@Getter

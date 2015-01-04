@@ -1,6 +1,19 @@
-<com.ecchilon.sadpanda.imageviewer.GestureViewPager
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/pager"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@android:color/transparent"/>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	>
+
+	<com.viewpagerindicator.CirclePageIndicator
+		android:id="@+id/indicator"
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		/>
+
+	<com.ecchilon.sadpanda.imageviewer.GestureViewPager
+		android:id="@+id/pager"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:background="@android:color/transparent"
+		/>
+
+</FrameLayout>

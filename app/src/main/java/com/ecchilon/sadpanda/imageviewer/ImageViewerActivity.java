@@ -45,7 +45,7 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		if(savedInstanceState != null) {
+		if (savedInstanceState != null) {
 			try {
 				mGalleryEntry =
 						mObjectMapper.readValue(savedInstanceState.getString(GALLERY_ENTRY_KEY), GalleryEntry.class);
@@ -164,10 +164,12 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
 		}
 	}
 
-	private class GalleryLoadTask extends AsyncResultTask<Uri, Void, GalleryEntry> {
+	private class GalleryLoadTask extends AsyncResultTask<Uri, Void, GalleryEntry> implements AsyncResultTask
+			.Callback<GalleryEntry> {
 
 		public GalleryLoadTask() {
 			super(false);
+			setListener(this);
 		}
 
 		@Override
@@ -176,12 +178,12 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
 		}
 
 		@Override
-		protected void onSuccess(GalleryEntry entry) {
+		public void onSuccess(GalleryEntry entry) {
 			setGallery(entry);
 		}
 
 		@Override
-		protected void onError(Exception e) {
+		public void onError(Exception e) {
 			Toast.makeText(ImageViewerActivity.this, R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
 			Log.e("ImageViewerFragment", "Failed to parse gallery entry", e);
 			finish();

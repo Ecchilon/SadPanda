@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
@@ -142,7 +143,7 @@ public class MainActivity extends RoboActionBarActivity implements LoginFragment
 
 		OverviewFragment fragment = (OverviewFragment) fragmentManager.findFragmentByTag(OVERVIEW_TAG);
 		if(fragment == null) {
-			fragment = OverviewFragment.newInstance(getDefaultQuery(), OverviewFragment.SearchType.ADVANCED);
+			fragment = OverviewFragment.newInstance(getDefaultQuery(), false, null, OverviewFragment.SearchType.ADVANCED);
 		}
 
 		fragmentManager.beginTransaction()
