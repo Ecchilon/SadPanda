@@ -26,19 +26,16 @@ public class ImageLoader {
         void onError(ApiErrorCode errorCode);
     }
 
-    @Inject
-    private DataLoader mDataLoader;
-
+    private final DataLoader mDataLoader;
     private final GalleryEntry mGalleryEntry;
 
     private SparseArray<ImageEntry> mEntryMap = new SparseArray<ImageEntry>();
 
     private Integer loadingPage = -1;
 
-    public ImageLoader(GalleryEntry entry, Context context) {
+    public ImageLoader(DataLoader dataLoader, GalleryEntry entry) {
+        this.mDataLoader = dataLoader;
         this.mGalleryEntry = entry;
-
-        RoboGuice.getInjector(context).injectMembers(this);
     }
 
     public void getImage(int page, ImageListener listener) {

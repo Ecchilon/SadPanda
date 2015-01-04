@@ -55,10 +55,10 @@ public class ImageViewerFragment extends RoboFragment {
 
 	@Inject
 	private ObjectMapper mObjectMapper;
+	@Inject
+	private ImageLoaderFactory mImageLoaderFactory;
 
 	private VisibilityToggler mVisibilityToggler;
-
-	private GalleryEntry mGalleryEntry;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -124,8 +124,9 @@ public class ImageViewerFragment extends RoboFragment {
 
 		mVisibilityToggler.toggleVisibility(false);
 
+		GalleryEntry galleryEntry;
 		try {
-			mGalleryEntry = mObjectMapper.readValue(getArguments().getString(GALLERY_ITEM_KEY), GalleryEntry.class);
+			galleryEntry = mObjectMapper.readValue(getArguments().getString(GALLERY_ITEM_KEY), GalleryEntry.class);
 		}
 		catch (IOException e) {
 			Toast.makeText(getActivity(), R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
@@ -134,10 +135,10 @@ public class ImageViewerFragment extends RoboFragment {
 			return;
 		}
 
-		ImageLoader loader = new ImageLoader(mGalleryEntry, getActivity());
+		ImageLoader loader = mImageLoaderFactory.getImageLoader(galleryEntry);
 
 		PagerAdapter mPagerAdapter = new ScreenSlidePagerAdapter(
-				getActivity().getSupportFragmentManager(), loader, mGalleryEntry, createArguments());
+				getActivity().getSupportFragmentManager(), loader, galleryEntry, createArguments());
 		mPager.setAdapter(mPagerAdapter);
 		mPager.setGestureDetector(new GestureDetector(getActivity(), new SingleTapListener()));
 		mPager.setOffscreenPageLimit(5);
