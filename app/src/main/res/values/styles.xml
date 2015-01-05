@@ -6,7 +6,17 @@
         <item name="android:actionBarStyle">@style/ActionBarStyle</item>
         <item name="colorPrimary">@color/dark_gray</item>
         <item name="colorAccent">@color/dark_gray</item>
+        <item name="vpiCirclePageIndicatorStyle">@style/AppTheme.PageIndicator</item>
         <!-- Customize your theme here. -->
+    </style>
+
+    <style name="AppTheme.PageIndicator" parent="Widget">
+        <item name="centered">@bool/default_circle_indicator_centered</item>
+        <item name="fillColor">@color/default_circle_indicator_fill_color</item>
+        <item name="radius">@dimen/default_circle_indicator_radius</item>
+        <item name="snap">@bool/default_circle_indicator_snap</item>
+        <item name="strokeColor">@color/default_circle_indicator_stroke_color</item>
+        <item name="strokeWidth">@dimen/default_circle_indicator_stroke_width</item>
     </style>
 
     <style name="AppTheme.PagerSlidingTabStrip">

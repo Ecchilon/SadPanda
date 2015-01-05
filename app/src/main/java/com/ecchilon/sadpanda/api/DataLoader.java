@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import com.ecchilon.sadpanda.imageviewer.ImageEntry;
+import com.ecchilon.sadpanda.imageviewer.ThumbEntry;
 import com.ecchilon.sadpanda.overview.Category;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.google.inject.Inject;
@@ -50,7 +51,7 @@ public class DataLoader {
 	private static final String PHOTO_URL_EX = "http://exhentai.org/s/%s/%d-%d";
 	private static final String GALLERY_PATTERN = "http://(g\\.e-|ex)hentai\\.org/g/(\\d+)/(\\w+)/";
 
-	private static final Pattern pPhotoUrl = Pattern.compile("http://(g\\.e-|ex)hentai\\.org/s/(\\w+?)/(\\d+)-(\\d+)");
+	private static final Pattern pPhotoUrl = Pattern.compile("width:(\\d+)px; height:(\\d+)px.*?url\\((.+?)\\) -(\\d+)px.*?http://exhentai\\.org/s/(\\w+?)/\\d+-(\\d+)");
 	private static final Pattern pShowkey = Pattern.compile("var showkey.*=.*\"([\\w-]+?)\";");
 	private static final Pattern pImageSrc = Pattern.compile("<img id=\"img\" src=\"(.+)/(.+?)\"");
 	private static final Pattern pGalleryHref = Pattern.compile("<a href=\"" + GALLERY_PATTERN + "\" onmouseover");
@@ -131,14 +132,25 @@ public class DataLoader {
 			Matcher matcher = pPhotoUrl.matcher(content);
 
 			while (matcher.find()) {
-				String token = matcher.group(2);
-				int photoPage = Integer.parseInt(matcher.group(4));
+				int width = Integer.parseInt(matcher.group(1));
+				int height = Integer.parseInt(matcher.group(2));
+				String thumbUrl = matcher.group(3);
+				int offset = Integer.parseInt(matcher.group(4));
 
-				ImageEntry photo = new ImageEntry();
+				ThumbEntry thumb = new ThumbEntry()
+						.setWidth(width)
+						.setHeight(height)
+						.setUrl(thumbUrl)
+						.setOffset(offset);
 
-				photo.setGalleryId(galleryId);
-				photo.setToken(token);
-				photo.setPage(photoPage);
+				String token = matcher.group(5);
+				int photoPage = Integer.parseInt(matcher.group(6));
+
+				ImageEntry photo = new ImageEntry()
+						.setGalleryId(galleryId)
+						.setToken(token)
+						.setPage(photoPage)
+						.setThumbEntry(thumb);
 
 				list.add(photo);
 			}
@@ -362,7 +374,7 @@ public class DataLoader {
 	public GalleryEntry getGallery(String url) throws ApiCallException {
 		Matcher matcher = pGalleryUrl.matcher(url);
 
-		if(matcher.find()) {
+		if (matcher.find()) {
 			long id = Long.parseLong(matcher.group(2));
 			String token = matcher.group(3);
 			return getGallery(id, token);
@@ -432,7 +444,7 @@ public class DataLoader {
 		HttpResponse response;
 		response = getHttpResponse(httpPost);
 
-		if(response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
+		if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
 			throw new ClientProtocolException();
 		}
 	}

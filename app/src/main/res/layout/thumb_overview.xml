@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.paging.listview.PagingGridView
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/thumb_overview"
+	android:numColumns="auto_fit"
+	android:horizontalSpacing="@dimen/small_margin"
+	android:verticalSpacing="@dimen/small_margin"
+	android:columnWidth="@dimen/thumb_overview_size"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:clickable="true"
+	/>
+

@@ -17,4 +17,5 @@
 		app:showAsAction="never"
 		android:title="@string/view_entry"
 		/>
+
 </menu>

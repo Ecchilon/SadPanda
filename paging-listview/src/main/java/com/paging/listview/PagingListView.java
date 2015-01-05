@@ -10,11 +10,8 @@ import android.widget.ListAdapter;
 import android.widget.ListView;
 
 
-public class PagingListView extends ListView {
+public class PagingListView extends ListView implements PagingView {
 
-	public interface Pagingable {
-		void onLoadMoreItems();
-	}
 
 	private boolean isLoading;
 	private boolean hasMoreItems;
@@ -38,18 +35,22 @@ public class PagingListView extends ListView {
 		init();
 	}
 
+	@Override
 	public boolean isLoading() {
 		return this.isLoading;
 	}
 
+	@Override
 	public void setIsLoading(boolean isLoading) {
 		this.isLoading = isLoading;
 	}
 
+	@Override
 	public void setPagingableListener(Pagingable pagingableListener) {
 		this.pagingableListener = pagingableListener;
 	}
 
+	@Override
 	public void setHasMoreItems(boolean hasMoreItems) {
 		this.hasMoreItems = hasMoreItems;
 		if(!this.hasMoreItems) {
@@ -62,11 +63,13 @@ public class PagingListView extends ListView {
 		}
 	}
 
+	@Override
 	public boolean hasMoreItems() {
 		return this.hasMoreItems;
 	}
 
 
+	@Override
 	public void onFinishLoading(boolean hasMoreItems, List<? extends Object> newItems) {
 		setHasMoreItems(hasMoreItems);
 		setIsLoading(false);

@@ -72,5 +72,7 @@
     <string name="favorite_added_failed">Failed to add to favorites</string>
     <string name="favorite_removed_failed">Failed to remove favorite</string>
     <string name="favorite_removed">Removed from favorites</string>
+    <string name="show_overview">View thumbnails</string>
+    <string name="show_image">Show page</string>
 
 </resources>

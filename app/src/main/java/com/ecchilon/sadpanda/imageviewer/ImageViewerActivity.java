@@ -5,19 +5,18 @@ import java.io.IOException;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.PersistableBundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.NavUtils;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
-import com.ecchilon.sadpanda.api.ApiCallException;
 import com.ecchilon.sadpanda.api.DataLoader;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.ecchilon.sadpanda.util.AsyncResultTask;
@@ -27,9 +26,11 @@ import roboguice.activity.RoboActionBarActivity;
 import roboguice.inject.ContentView;
 
 @ContentView(R.layout.activity_image)
-public class ImageViewerActivity extends RoboActionBarActivity implements ImageViewerFragment.VisibilityToggler {
+public class ImageViewerActivity extends RoboActionBarActivity implements ImageViewerFragment.VisibilityToggler,
+		ThumbFragment.OnThumbSelectedListener, ImageViewerFragment.PageSelectedListener {
 
 	private static final String GALLERY_ENTRY_KEY = "galleryEntryKey";
+	private static final String ACTIVITY_STATE_KEY = "activityStateKey";
 
 	private boolean lowProfile = false;
 
@@ -40,6 +41,19 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
 	private DataLoader mDataLoader;
 
 	private GalleryEntry mGalleryEntry;
+
+	private boolean mThumbMode = false;
+
+	private Handler uiHandler = new Handler();
+	private Runnable hideTask = new Runnable() {
+		@SuppressLint("NewApi")
+		@Override
+		public void run() {
+			getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
+		}
+	};
+
+	private int mCurrentPage = 0;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -53,6 +67,8 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
 			catch (IOException e) {
 				Log.w("ImageViewerFragment", "Failed to parse gallery entry during state restoration", e);
 			}
+
+			mThumbMode = savedInstanceState.getBoolean(ACTIVITY_STATE_KEY);
 		}
 
 		if (mGalleryEntry == null) {
@@ -75,24 +91,40 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
 					return;
 				}
 
-				setGallery(mGalleryEntry);
+				getSupportActionBar().setTitle(mGalleryEntry.getTitle());
+				getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+				getSupportActionBar().setHomeButtonEnabled(true);
+
+				loadFragment();
 			}
 		}
 	}
 
-	private Handler uiHandler = new Handler();
-	private Runnable hideTask = new Runnable() {
-		@SuppressLint("NewApi")
-		@Override
-		public void run() {
-			getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
+	private void loadFragment() {
+		Fragment activeFragment = getSupportFragmentManager().findFragmentById(R.id.container);
+		if (activeFragment != null &&
+				((activeFragment instanceof ThumbFragment && mThumbMode) || (
+						activeFragment instanceof ImageViewerFragment && !mThumbMode))) {
+			//fragment is the correct fragment
+			return;
 		}
-	};
 
+		String entryString = getIntent().getStringExtra(ImageViewerFragment.GALLERY_ITEM_KEY);
+		Fragment newFragment = mThumbMode ?
+				ThumbFragment.newInstance(entryString) :
+				ImageViewerFragment.newInstance(entryString,mCurrentPage);
+
+		getSupportFragmentManager()
+				.beginTransaction()
+				.replace(R.id.container, newFragment)
+				.commit();
+	}
 
 	@Override
 	protected void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
+
+		outState.putBoolean(ACTIVITY_STATE_KEY, mThumbMode);
 
 		if (mGalleryEntry != null) {
 			try {
@@ -101,6 +133,23 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
 			catch (IOException ignored) {
 			}
 		}
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.image_activity, menu);
+
+		return super.onCreateOptionsMenu(menu);
+	}
+
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {
+		MenuItem item = menu.findItem(R.id.show_overview);
+
+		item.setIcon(mThumbMode ? R.drawable.ic_action_picture : R.drawable.ic_action_view_as_grid);
+		item.setTitle(mThumbMode ? R.string.show_image : R.string.show_overview);
+
+		return super.onPrepareOptionsMenu(menu);
 	}
 
 	@Override
@@ -140,28 +189,32 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
 					onBackPressed();
 				}
 				break;
+			case R.id.show_overview:
+				toggleGridview();
+				return true;
 			default:
 				return super.onOptionsItemSelected(item);
 		}
 		return true;
 	}
 
-	private void setGallery(GalleryEntry galleryEntry) {
-		getSupportActionBar().setTitle(galleryEntry.getTitle());
-		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-		getSupportActionBar().setHomeButtonEnabled(true);
+	private void toggleGridview() {
+		mThumbMode = !mThumbMode;
 
-		try {
-			getSupportFragmentManager().beginTransaction()
-					.add(R.id.container,
-							ImageViewerFragment.newInstance(mObjectMapper.writeValueAsString(galleryEntry)))
-					.commit();
-		}
-		catch (IOException e) {
-			Toast.makeText(this, R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
-			Log.e("ImageViewerFragment", "Failed to parse gallery entry", e);
-			finish();
-		}
+		invalidateOptionsMenu();
+
+		loadFragment();
+	}
+
+	@Override
+	public void onThumbSelected(int position) {
+		mCurrentPage = position;
+		toggleGridview();
+	}
+
+	@Override
+	public void onPageSelected(int page) {
+		mCurrentPage = page;
 	}
 
 	private class GalleryLoadTask extends AsyncResultTask<Uri, Void, GalleryEntry> implements AsyncResultTask
@@ -179,7 +232,8 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
 
 		@Override
 		public void onSuccess(GalleryEntry entry) {
-			setGallery(entry);
+			mGalleryEntry = entry;
+			loadFragment();
 		}
 
 		@Override

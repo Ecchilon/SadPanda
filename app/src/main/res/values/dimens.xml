@@ -10,11 +10,8 @@
     <dimen name="item_size">48dp</dimen>
     <dimen name="progress_bar_size">48dp</dimen>
     <dimen name="thumb_size">64dp</dimen>
-    <dimen name="empty_view_size">72dp</dimen>
     <dimen name="small_category_size">12dp</dimen>
     <dimen name="medium_category_size">18dp</dimen>
-    <dimen name="floating_action_button">56dp</dimen>
-    <dimen name="advanced_height">400dp</dimen>
     <dimen name="navigation_drawer_width">240dp</dimen>
-
+    <dimen name="thumb_overview_size">120dp</dimen>
 </resources>

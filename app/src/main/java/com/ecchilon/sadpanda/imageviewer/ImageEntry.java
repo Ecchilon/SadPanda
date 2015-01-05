@@ -14,4 +14,5 @@ public class ImageEntry {
     private Long galleryId;
     private String token;
     private Integer page;
+    private ThumbEntry thumbEntry;
 }
