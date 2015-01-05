@@ -25,7 +25,7 @@
 
     <style name="AppTheme.CustomActionBarTheme" parent="AppTheme">
         <item name="android:windowActionBarOverlay">true</item>
-        <item name="android:windowBackground">@color/black_overlay</item>
+        <item name="android:windowBackground">@color/black</item>
         <item name="windowActionBarOverlay">true</item>
     </style>
 

@@ -5,6 +5,8 @@ import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.View;
+import com.ecchilon.sadpanda.R;
 
 /**
  * Created by Alex on 1/24/14.
@@ -27,5 +29,16 @@ public class GestureViewPager extends ViewPager {
         if(mDetector != null)
             mDetector.onTouchEvent(ev);
         return super.dispatchTouchEvent(ev);
+    }
+
+    @Override
+    protected boolean canScroll(View v, boolean checkV, int dx, int x, int y) {
+        View child = v.findViewById(R.id.animated_view);
+        if(child instanceof ScrollWebView) {
+            return ((ScrollWebView)child).canScrollHor(-dx);
+        }
+        else {
+            return super.canScroll(v, checkV, dx, x, y);
+        }
     }
 }

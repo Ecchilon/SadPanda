@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent" android:layout_height="match_parent"
-    android:background="@android:color/transparent">
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    >
 
     <uk.co.senab.photoview.PhotoView
         android:id="@+id/image_view"
@@ -11,11 +11,19 @@
         android:layout_height="match_parent"
         android:contentDescription="@string/image_description" />
 
+    <com.ecchilon.sadpanda.imageviewer.ScrollWebView
+        android:id="@+id/animated_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:visibility="gone"
+        />
+
     <TextView
         android:visibility="gone"
         android:id="@+id/failure_text"
         android:layout_marginTop="20dp"
-        android:layout_centerInParent="true"
+        android:layout_gravity="center"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/image_loading_failed"
@@ -23,9 +31,9 @@
 
     <fr.castorflex.android.smoothprogressbar.SmoothProgressBar
         android:id="@+id/loading_view"
-        android:layout_alignParentBottom="true"
+        android:layout_gravity="bottom"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:indeterminate="true"
         style="@style/PandaBar"/>
-</RelativeLayout>
+</FrameLayout>

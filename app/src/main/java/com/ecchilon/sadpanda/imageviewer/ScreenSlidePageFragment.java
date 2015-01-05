@@ -10,6 +10,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.ecchilon.sadpanda.R;
@@ -28,6 +30,32 @@ import uk.co.senab.photoview.PhotoView;
  */
 public class ScreenSlidePageFragment extends RoboFragment implements AsyncResultTask.Callback<ImageEntry>, Callback {
 
+	private static final String CENTER_HTML =
+			"<html>"
+					+ "<head>"
+					+ "<style type='text/css'>"
+					+ "#im {"
+					+ "position: absolute;"
+					+ "top: 0;"
+					+ "left: 0;"
+					+ "right: 0;"
+					+ "bottom: 0;"
+					+ "background-image: url(\"%s\");"
+					+ "background-repeat: no-repeat;"
+					+ "background-size: contain;"
+					+ "background-position: center;"
+					+ "}"
+					+ "</style>"
+					+ "</head>"
+					+ "<body>"
+					+ "<div id=\"im\">"
+					+ "</div>"
+					+ "</body>"
+					+ "</html>";
+
+	private static final String CONTENT_TYPE = "text/html";
+	private static final String CONTENT_ENCODING = "UTF-8";
+
 	public static final String IMAGE_SCALE_KEY = "imageScaleKey";
 
 	public static final String MAX_ZOOM_KEY = "ExhentaiMaxScale";
@@ -37,9 +65,11 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 	@InjectView(R.id.image_view)
 	private PhotoView mImageView;
 	@InjectView(R.id.loading_view)
-	private ProgressBar loadingBar;
+	private ProgressBar mLoadingBar;
 	@InjectView(R.id.failure_text)
-	private TextView failureText;
+	private TextView mFailureText;
+	@InjectView(R.id.animated_view)
+	private WebView mAnimatedView;
 
 	private ImageScale mImageScale = ImageScale.FIT_TO_SCREEN;
 
@@ -81,6 +111,17 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 
 		mImageView.setMaximumScale(mMaxZoom);
 
+		mAnimatedView.getSettings().setSupportZoom(true);
+		mAnimatedView.setBackgroundColor(getResources().getColor(R.color.black));
+		mAnimatedView.setWebViewClient(new WebViewClient() {
+			@Override
+			public void onPageFinished(WebView view, String url) {
+				super.onPageFinished(view, url);
+
+				mLoadingBar.setVisibility(View.GONE);
+			}
+		});
+
 		if (mImageEntry != null && mImageEntry.getSrc() != null) {
 			loadImage();
 		}
@@ -98,13 +139,28 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 	}
 
 	private void loadImage() {
-		loadingBar.setVisibility(View.VISIBLE);
-		failureText.setVisibility(View.GONE);
+		mLoadingBar.setVisibility(View.VISIBLE);
+		mFailureText.setVisibility(View.GONE);
 
 		if (mImageEntry == null || mImageEntry.getSrc() == null) {
 			return;
 		}
 
+		if (mImageEntry.getSrc().endsWith(".gif")) {
+			loadAnimatedView();
+		}
+		else {
+			loadSimpleView();
+		}
+	}
+
+	private void loadAnimatedView() {
+		mImageView.setVisibility(View.GONE);
+		mAnimatedView.setVisibility(View.VISIBLE);
+		mAnimatedView.loadData(String.format(CENTER_HTML, mImageEntry.getSrc()), CONTENT_TYPE, CONTENT_ENCODING);
+	}
+
+	private void loadSimpleView() {
 		RequestCreator requestCreator = Picasso.with(getActivity()).load(mImageEntry.getSrc());
 		requestCreator.skipMemoryCache();
 
@@ -136,26 +192,26 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 
 	@Override
 	public void onError(Exception e) {
-		failureText.setVisibility(View.VISIBLE);
+		mFailureText.setVisibility(View.VISIBLE);
 		Log.e("ScreenSlidePageFragment", "Error loading image", e);
 	}
 
 	@Override
 	public void onSuccess() {
-		loadingBar.setVisibility(View.GONE);
+		mLoadingBar.setVisibility(View.GONE);
 	}
 
 	@Override
 	public void onError() {
 		if (SadPandaApp.getLastException() instanceof Downloader.ResponseException) {
-			failureText.setText(R.string.image_not_found);
+			mFailureText.setText(R.string.image_not_found);
 		}
 		else {
-			failureText.setText(R.string.image_loading_failed);
+			mFailureText.setText(R.string.image_loading_failed);
 		}
 
-		failureText.setVisibility(View.VISIBLE);
+		mFailureText.setVisibility(View.VISIBLE);
 
-		loadingBar.setVisibility(View.GONE);
+		mLoadingBar.setVisibility(View.GONE);
 	}
 }

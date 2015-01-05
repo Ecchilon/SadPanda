@@ -10,7 +10,7 @@
     <color name="cosplay">#FF993399</color>
     <color name="asian_porn">#FFFF99FF</color>
     <color name="misc">#FFE2E2E2</color>
-    <color name="black_overlay">#000000</color>
+    <color name="black">#000000</color>
 
     <color name="search_normal">#42bd41</color>
     <color name="search_pressed">#259b24</color>
