@@ -20,22 +20,21 @@ public class CroppedImageView extends ImageView {
 		setScaleType(ScaleType.MATRIX);
 	}
 
-	public CroppedImageView(Context context, AttributeSet attrs)
-	{
+	public CroppedImageView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		setScaleType(ScaleType.MATRIX);
 	}
 
-	public CroppedImageView(Context context, AttributeSet attrs, int defStyle)
-	{
+	public CroppedImageView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 		setScaleType(ScaleType.MATRIX);
 	}
 
 	@Override
 	protected boolean setFrame(int l, int t, int r, int b) {
-		if(!isInit)
+		if (!isInit) {
 			return false;
+		}
 
 		Matrix matrix = getImageMatrix();
 		matrix.setTranslate(mDx, mDy);

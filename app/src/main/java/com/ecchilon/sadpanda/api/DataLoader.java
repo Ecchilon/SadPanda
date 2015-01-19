@@ -51,7 +51,7 @@ public class DataLoader {
 	private static final String PHOTO_URL_EX = "http://exhentai.org/s/%s/%d-%d";
 	private static final String GALLERY_PATTERN = "http://(g\\.e-|ex)hentai\\.org/g/(\\d+)/(\\w+)/";
 
-	private static final Pattern pPhotoUrl = Pattern.compile("width:(\\d+)px; height:(\\d+)px.*?url\\((.+?)\\) -(\\d+)px.*?http://exhentai\\.org/s/(\\w+?)/\\d+-(\\d+)");
+	private static final Pattern pPhotoUrl = Pattern.compile("width:(\\d+)px; height:(\\d+)px; background:transparent url\\((.+?)\\) -(\\d+)px 0 no-repeat\"><a href=\"http://exhentai\\.org/s/(\\w+?)/\\d+-(\\d+)");
 	private static final Pattern pShowkey = Pattern.compile("var showkey.*=.*\"([\\w-]+?)\";");
 	private static final Pattern pImageSrc = Pattern.compile("<img id=\"img\" src=\"(.+)/(.+?)\"");
 	private static final Pattern pGalleryHref = Pattern.compile("<a href=\"" + GALLERY_PATTERN + "\" onmouseover");
@@ -135,7 +135,7 @@ public class DataLoader {
 				int width = Integer.parseInt(matcher.group(1));
 				int height = Integer.parseInt(matcher.group(2));
 				String thumbUrl = matcher.group(3);
-				int offset = Integer.parseInt(matcher.group(4));
+				int offset = -Integer.parseInt(matcher.group(4));
 
 				ThumbEntry thumb = new ThumbEntry()
 						.setWidth(width)
