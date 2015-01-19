@@ -1,7 +1,6 @@
 package com.ecchilon.sadpanda.imageviewer;
 
 import java.io.IOException;
-import java.util.List;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -12,28 +11,30 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
+import android.widget.GridView;
 import android.widget.Toast;
+import com.ecchilon.sadpanda.PageLoadTaskFactory;
 import com.ecchilon.sadpanda.R;
-import com.ecchilon.sadpanda.api.DataLoader;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
-import com.ecchilon.sadpanda.util.AsyncResultTask;
 import com.google.inject.Inject;
-import com.paging.listview.PagingGridView;
-import com.paging.listview.PagingView;
+import com.squareup.picasso.Picasso;
+import lombok.Getter;
 import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
 
-public class ThumbFragment extends RoboFragment implements AbsListView.OnItemClickListener, PagingView.Pagingable {
+public class ThumbFragment extends RoboFragment implements AbsListView.OnItemClickListener {
 
 	public interface OnThumbSelectedListener {
 		void onThumbSelected(int position);
 	}
 
 	private static final String GRID_STATE_KEY = "gridStateKey";
-	private static final int THUMB_COUNT = 40;
 
 	public static final String GALLERY_ENTRY_KEY = "galleryEntryKey";
+
+	@Getter
+	private static final Object picassoTag = new Object();
 
 	public static ThumbFragment newInstance(@NonNull String entryString) {
 		Bundle args = new Bundle();
@@ -45,17 +46,16 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 	}
 
 	@InjectView(R.id.thumb_overview)
-	private PagingGridView mThumbOverview;
+	private GridView mThumbOverview;
 
 	@Inject
-	private DataLoader mDataLoader;
+	private PageLoadTaskFactory mTaskFactory;
 
 	@Inject
 	private ObjectMapper mObjectMapper;
 
 	private GalleryEntry mGalleryEntry;
 	private OnThumbSelectedListener mListener;
-	private int mCurrentPage = 0;
 
 	@Override
 	public void onAttach(Activity activity) {
@@ -74,6 +74,7 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 	public void onDetach() {
 		super.onDetach();
 
+		Picasso.with(getActivity()).cancelTag(picassoTag);
 		mListener = null;
 	}
 
@@ -100,10 +101,8 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 	public void onViewCreated(View view, Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 
-		ThumbAdapter adapter = new ThumbAdapter();
+		ThumbAdapter adapter = new ThumbAdapter(mTaskFactory, mGalleryEntry);
 		mThumbOverview.setAdapter(adapter);
-		mThumbOverview.setPagingableListener(this);
-		mThumbOverview.setHasMoreItems(true);
 		mThumbOverview.setOnItemClickListener(this);
 		if(savedInstanceState != null) {
 			mThumbOverview.onRestoreInstanceState(savedInstanceState.getParcelable(GRID_STATE_KEY));
@@ -120,35 +119,5 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 		super.onSaveInstanceState(outState);
 
 		 outState.putParcelable(GRID_STATE_KEY, mThumbOverview.onSaveInstanceState());
-	}
-
-	@Override
-	public void onLoadMoreItems() {
-		PageLoadTask task = new PageLoadTask();
-		task.setListener(new AsyncResultTask.Callback<List<ImageEntry>>() {
-			@Override
-			public void onSuccess(List<ImageEntry> result) {
-				mCurrentPage++;
-				mThumbOverview.onFinishLoading(result.size() == THUMB_COUNT, result);
-			}
-
-			@Override
-			public void onError(Exception e) {
-				mThumbOverview.onFinishLoading(false, null);
-			}
-		});
-		task.execute(mCurrentPage);
-	}
-
-	private class PageLoadTask extends AsyncResultTask<Integer, Void, List<ImageEntry>> {
-
-		public PageLoadTask() {
-			super(false);
-		}
-
-		@Override
-		protected List<ImageEntry> call(Integer... params) throws Exception {
-			return mDataLoader.getPhotoList(mGalleryEntry, params[0]);
-		}
 	}
 }

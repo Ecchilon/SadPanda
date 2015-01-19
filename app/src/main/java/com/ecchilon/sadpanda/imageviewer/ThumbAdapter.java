@@ -1,23 +1,49 @@
 package com.ecchilon.sadpanda.imageviewer;
 
+import java.util.List;
+
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import com.ecchilon.sadpanda.PageLoadTaskFactory;
+import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.overview.GalleryEntry;
+import com.ecchilon.sadpanda.util.AsyncResultTask;
+import com.google.common.collect.Lists;
 import com.paging.listview.PagingBaseAdapter;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 
-public class ThumbAdapter extends PagingBaseAdapter<ImageEntry> {
+public class ThumbAdapter extends BaseAdapter {
+
+	private final List<ImageEntry> items;
+	private final PageLoadTaskFactory mPageTaskFactory;
+	private final GalleryEntry mGalleryEntry;
+
+	private int mCurrentPage = 0;
+
+	public ThumbAdapter(PageLoadTaskFactory taskFactory, GalleryEntry entry) {
+		items = Lists.newArrayListWithCapacity(entry.getFileCount());
+		mPageTaskFactory = taskFactory;
+		mGalleryEntry = entry;
+	}
 
 	@Override
 	public int getCount() {
-		return items.size();
+		return mGalleryEntry.getFileCount();
 	}
 
 	@Override
 	public ImageEntry getItem(int position) {
+		if(position >= items.size()) {
+			return null;
+		}
+
 		return items.get(position);
 	}
 
@@ -28,17 +54,44 @@ public class ThumbAdapter extends PagingBaseAdapter<ImageEntry> {
 
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
-		CroppedImageView view = (CroppedImageView) convertView;
+		ImageView view = (ImageView) convertView;
 		if (view == null) {
-			view = new CroppedImageView(parent.getContext());
+			view = new ImageView(parent.getContext());
+
+			int height = parent.getContext().getResources().getDimensionPixelSize(R.dimen.thumb_height);
+			view.setScaleType(ImageView.ScaleType.FIT_CENTER);
+			view.setLayoutParams(new AbsListView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height));
 		}
 
-		initThumb(view, items.get(position).getThumbEntry());
+		ImageEntry item = getItem(position);
+		if(item == null) {
+			loadNewPage();
+		}
+		else {
+			initThumb(view, items.get(position).getThumbEntry());
+		}
 
 		return view;
 	}
 
-	private void initThumb(CroppedImageView thumbnail, ThumbEntry item) {
+	private void loadNewPage() {
+		PageLoadTaskFactory.PageLoadTask task = mPageTaskFactory.create(mGalleryEntry, mCurrentPage);
+		task.setListener(new AsyncResultTask.Callback<List<ImageEntry>>() {
+			@Override
+			public void onSuccess(List<ImageEntry> result) {
+				mCurrentPage++;
+				items.addAll(result);
+				notifyDataSetChanged();
+			}
+
+			@Override
+			public void onError(Exception e) {
+
+			}
+		}).execute();
+	}
+
+	private void initThumb(ImageView thumbnail, ThumbEntry item) {
 		int height = item.getHeight(), width = item.getWidth();
 
 		if (height == -1 && width == -1) {
@@ -46,29 +99,29 @@ public class ThumbAdapter extends PagingBaseAdapter<ImageEntry> {
 			width = 100;
 		}
 
-		thumbnail.setBounds(item.getOffset(), 0, width, height);
-		thumbnail.setLayoutParams(new AbsListView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
-				ViewGroup.LayoutParams.MATCH_PARENT));
-
-		CroppedTarget target = new CroppedTarget(thumbnail);
+		CroppedTarget target =
+				new CroppedTarget(thumbnail, new Rect(item.getOffset(), 0, item.getOffset() + width, height));
 
 		Picasso.with(thumbnail.getContext())
 				.load(item.getUrl())
+				.tag(ThumbFragment.getPicassoTag())
 				.into(target);
 
 		thumbnail.setTag(target);
 	}
 
 	private static class CroppedTarget implements Target {
-		private final CroppedImageView target;
+		private final ImageView target;
+		private final Rect bounds;
 
-		private CroppedTarget(CroppedImageView target) {
+		private CroppedTarget(ImageView target, Rect bounds) {
 			this.target = target;
+			this.bounds = bounds;
 		}
 
 		@Override
 		public void onBitmapLoaded(Bitmap bitmap, Picasso.LoadedFrom from) {
-			target.setImageBitmap(bitmap);
+			target.setImageDrawable(new CroppedBitmapDrawable(bitmap, bounds));
 		}
 
 		@Override

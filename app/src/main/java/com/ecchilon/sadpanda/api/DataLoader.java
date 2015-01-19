@@ -135,7 +135,7 @@ public class DataLoader {
 				int width = Integer.parseInt(matcher.group(1));
 				int height = Integer.parseInt(matcher.group(2));
 				String thumbUrl = matcher.group(3);
-				int offset = -Integer.parseInt(matcher.group(4));
+				int offset = Integer.parseInt(matcher.group(4));
 
 				ThumbEntry thumb = new ThumbEntry()
 						.setWidth(width)

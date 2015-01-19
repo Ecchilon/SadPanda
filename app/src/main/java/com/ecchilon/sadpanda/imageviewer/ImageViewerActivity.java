@@ -112,7 +112,7 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
 		String entryString = getIntent().getStringExtra(ImageViewerFragment.GALLERY_ITEM_KEY);
 		Fragment newFragment = mThumbMode ?
 				ThumbFragment.newInstance(entryString) :
-				ImageViewerFragment.newInstance(entryString,mCurrentPage);
+				ImageViewerFragment.newInstance(entryString, mCurrentPage);
 
 		getSupportFragmentManager()
 				.beginTransaction()

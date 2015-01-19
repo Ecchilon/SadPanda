@@ -169,8 +169,8 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 				Display display = getActivity().getWindowManager().getDefaultDisplay();
 				Point size = new Point();
 				display.getSize(size);
-				int width = size.x;
-				int height = size.y;
+				int width = size.x * 2;
+				int height = size.y * 2;
 				requestCreator.resize(width, height);
 				break;
 			case FIT_TO_SCREEN:
@@ -188,6 +188,13 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 		if (mImageView != null && mImageEntry != null && mImageEntry.getSrc() != null) {
 			loadImage();
 		}
+	}
+
+	@Override
+	public void onDetach() {
+		super.onDetach();
+
+		Picasso.with(getActivity()).cancelRequest(mImageView);
 	}
 
 	@Override
