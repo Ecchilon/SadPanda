@@ -22,6 +22,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.overview.OverviewFragment;
 import com.ecchilon.sadpanda.overview.SearchActivity;
 import com.google.common.collect.Lists;
 import roboguice.util.Strings;
@@ -47,7 +48,7 @@ public class SearchDialogFragment extends DialogFragment {
 
 		final View searchView = LayoutInflater.from(getActivity()).inflate(R.layout.search_view, null);
 
-		mSearchView = new SearchView(searchView);
+		mSearchView = new SearchView(searchView, getArguments().getString(OverviewFragment.URL_KEY));
 
 		HistoryEditText query = (HistoryEditText) searchView.findViewById(R.id.search_query);
 
@@ -126,13 +127,12 @@ public class SearchDialogFragment extends DialogFragment {
 	}
 
 	private void addToHistory(List<String> history, String query) {
-		if (Strings.isEmpty(query)) {
+		if (Strings.isEmpty(query) || history.contains(query)) {
 			return;
 		}
 
 		if (history.size() >= MAX_HISTORY_SIZE) {
 			history = history.subList(0, MAX_HISTORY_SIZE - 1);
-
 		}
 
 		history.add(0, query);

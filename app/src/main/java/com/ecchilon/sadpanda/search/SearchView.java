@@ -24,12 +24,13 @@ import roboguice.util.Strings;
  */
 public class SearchView implements View.OnClickListener {
 
-	private final SearchController mSearchController = new SearchController();
+	private final SearchController mSearchController;
 	private final EditText mQueryView;
 
-	public SearchView(View searchView) {
-		attachQueryViews(searchView);
+	public SearchView(View searchView, String url) {
+		mSearchController = new SearchController(url);
 
+		attachQueryViews(searchView);
 		mQueryView = (EditText) searchView.findViewById(R.id.search_query);
 	}
 

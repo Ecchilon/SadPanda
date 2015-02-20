@@ -227,6 +227,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	private void showSearchFragment() {
 		Bundle args = new Bundle();
 		args.putSerializable(SEARCH_TYPE_KEY, mSearchType);
+		args.putString(URL_KEY, mQueryUrl);
 
 		if (getArguments().containsKey(SearchActivity.QUERY_KEY)) {
 			args.putString(SearchActivity.QUERY_KEY, getArguments().getString(SearchActivity.QUERY_KEY));
