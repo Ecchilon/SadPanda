@@ -7,12 +7,14 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Point;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
+import android.view.Display;
 import android.view.GestureDetector;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -40,6 +42,8 @@ import com.ecchilon.sadpanda.util.RemoveFavoriteCallback;
 import com.google.inject.Inject;
 import com.paging.listview.PagingGridView;
 import com.paging.listview.PagingView;
+import com.viewpagerindicator.CirclePageIndicator;
+import com.viewpagerindicator.LinePageIndicator;
 import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
@@ -82,7 +86,8 @@ public class ImageViewerFragment extends RoboFragment implements FavoritesMenu.F
 	 */
 	@InjectView(R.id.pager)
 	private GestureViewPager mPager;
-
+	@InjectView(R.id.indicator)
+	private LinePageIndicator mIndicator;
 	@Inject
 	private ObjectMapper mObjectMapper;
 	@Inject
@@ -173,13 +178,25 @@ public class ImageViewerFragment extends RoboFragment implements FavoritesMenu.F
 		mPager.setAdapter(pagerAdapter);
 		mPager.setGestureDetector(new GestureDetector(getActivity(), new SingleTapListener()));
 		mPager.setOffscreenPageLimit(2);
-		mPager.setOnPageChangeListener(new MyOnPageChangeListener());
+
+		mIndicator.setViewPager(mPager);
+		mIndicator.setOnPageChangeListener(new MyOnPageChangeListener());
+		mIndicator.setLineWidth(getLineIndicatorLineWidth());
+
 		if(savedInstanceState != null) {
 			mPager.onRestoreInstanceState(savedInstanceState.getParcelable(PAGER_STATE_KEY));
 		}
 		else if(getArguments() != null && getArguments().containsKey(PAGE_NUMBER_KEY)) {
 			mPager.setCurrentItem(getArguments().getInt(PAGE_NUMBER_KEY), false);
 		}
+	}
+
+	private float getLineIndicatorLineWidth() {
+		Display display = getActivity().getWindowManager().getDefaultDisplay();
+		Point size = new Point();
+		display.getSize(size);
+
+		return size.x / (float)mGalleryEntry.getFileCount();
 	}
 
 	@Override

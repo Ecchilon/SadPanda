@@ -15,4 +15,5 @@
     <dimen name="navigation_drawer_width">240dp</dimen>
     <dimen name="thumb_overview_size">120dp</dimen>
     <dimen name="thumb_height">100dp</dimen>
+    <dimen name="viewer_indicator_size">4dp</dimen>
 </resources>
