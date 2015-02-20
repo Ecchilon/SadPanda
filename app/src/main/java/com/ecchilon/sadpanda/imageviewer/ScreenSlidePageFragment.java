@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.ecchilon.sadpanda.R;
@@ -70,6 +71,8 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 	private TextView mFailureText;
 	@InjectView(R.id.animated_view)
 	private WebView mAnimatedView;
+	@InjectView(R.id.container)
+	private FrameLayout mContainer;
 
 	private ImageScale mImageScale = ImageScale.FIT_TO_SCREEN;
 
@@ -90,6 +93,14 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 				mImageScale = (ImageScale) getArguments().getSerializable(IMAGE_SCALE_KEY);
 			}
 		}
+	}
+
+	@Override
+	public void onDestroy() {
+		//Because GC bug in WebView
+		mContainer.removeAllViews();
+		mAnimatedView.destroy();
+		super.onDestroy();
 	}
 
 	@Override

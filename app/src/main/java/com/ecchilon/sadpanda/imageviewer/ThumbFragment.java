@@ -33,12 +33,15 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 
 	public static final String GALLERY_ENTRY_KEY = "galleryEntryKey";
 
+	public static final String CURRENT_PAGE_KEY = "currentPageKey";
+
 	@Getter
 	private static final Object picassoTag = new Object();
 
-	public static ThumbFragment newInstance(@NonNull String entryString) {
+	public static ThumbFragment newInstance(@NonNull String entryString, int currentPage) {
 		Bundle args = new Bundle();
 		args.putString(GALLERY_ENTRY_KEY, entryString);
+		args.putInt(CURRENT_PAGE_KEY, currentPage);
 
 		ThumbFragment fragment = new ThumbFragment();
 		fragment.setArguments(args);
@@ -54,6 +57,7 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 	@Inject
 	private ObjectMapper mObjectMapper;
 
+	private int mCurrentPage;
 	private GalleryEntry mGalleryEntry;
 	private OnThumbSelectedListener mListener;
 
@@ -82,6 +86,8 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		mCurrentPage = getArguments().getInt(CURRENT_PAGE_KEY);
+
 		try {
 			mGalleryEntry = mObjectMapper.readValue(getArguments().getString(GALLERY_ENTRY_KEY), GalleryEntry.class);
 		}
@@ -104,8 +110,11 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 		ThumbAdapter adapter = new ThumbAdapter(mTaskFactory, mGalleryEntry);
 		mThumbOverview.setAdapter(adapter);
 		mThumbOverview.setOnItemClickListener(this);
-		if(savedInstanceState != null) {
+		if (savedInstanceState != null) {
 			mThumbOverview.onRestoreInstanceState(savedInstanceState.getParcelable(GRID_STATE_KEY));
+		}
+		else {
+			mThumbOverview.setSelection(mCurrentPage);
 		}
 	}
 
@@ -118,6 +127,6 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 	public void onSaveInstanceState(Bundle outState) {
 		super.onSaveInstanceState(outState);
 
-		 outState.putParcelable(GRID_STATE_KEY, mThumbOverview.onSaveInstanceState());
+		outState.putParcelable(GRID_STATE_KEY, mThumbOverview.onSaveInstanceState());
 	}
 }

@@ -91,13 +91,16 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
 					return;
 				}
 
-				getSupportActionBar().setTitle(mGalleryEntry.getTitle());
-				getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-				getSupportActionBar().setHomeButtonEnabled(true);
-
 				loadFragment();
 			}
 		}
+
+		if(mGalleryEntry != null) {
+			getSupportActionBar().setTitle(mGalleryEntry.getTitle());
+		}
+
+		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+		getSupportActionBar().setHomeButtonEnabled(true);
 	}
 
 	private void loadFragment() {
@@ -111,7 +114,7 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
 
 		String entryString = getIntent().getStringExtra(ImageViewerFragment.GALLERY_ITEM_KEY);
 		Fragment newFragment = mThumbMode ?
-				ThumbFragment.newInstance(entryString) :
+				ThumbFragment.newInstance(entryString, mCurrentPage) :
 				ImageViewerFragment.newInstance(entryString, mCurrentPage);
 
 		getSupportFragmentManager()

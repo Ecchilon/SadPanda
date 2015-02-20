@@ -25,6 +25,7 @@ public class ThumbAdapter extends BaseAdapter {
 	private final PageLoadTaskFactory mPageTaskFactory;
 	private final GalleryEntry mGalleryEntry;
 
+	private PageLoadTaskFactory.PageLoadTask mCurrentTask;
 	private int mCurrentPage = 0;
 
 	public ThumbAdapter(PageLoadTaskFactory taskFactory, GalleryEntry entry) {
@@ -75,11 +76,16 @@ public class ThumbAdapter extends BaseAdapter {
 	}
 
 	private void loadNewPage() {
-		PageLoadTaskFactory.PageLoadTask task = mPageTaskFactory.create(mGalleryEntry, mCurrentPage);
-		task.setListener(new AsyncResultTask.Callback<List<ImageEntry>>() {
+		if(mCurrentTask != null) {
+			 return;
+		}
+
+		mCurrentTask = mPageTaskFactory.create(mGalleryEntry, mCurrentPage);
+		mCurrentTask.setListener(new AsyncResultTask.Callback<List<ImageEntry>>() {
 			@Override
 			public void onSuccess(List<ImageEntry> result) {
 				mCurrentPage++;
+				mCurrentTask = null;
 				items.addAll(result);
 				notifyDataSetChanged();
 			}
