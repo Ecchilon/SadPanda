@@ -31,6 +31,14 @@ public class QueryObject {
         return active ? mOnValue : mOffValue;
     }
 
+    public String getOnValue() {
+        return mOnValue;
+    }
+
+    public String getOffValue() {
+        return mOffValue;
+    }
+
     public QueryObject copy() {
         return new QueryObject(key, mOnValue, mOffValue, nameId).setActive(active);
     }

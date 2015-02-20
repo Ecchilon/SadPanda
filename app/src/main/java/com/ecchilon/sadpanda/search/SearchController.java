@@ -54,6 +54,38 @@ public class SearchController {
 
 	private int stars;
 
+	public SearchController(String url) {
+		Uri uri = Uri.parse(url);
+
+		for (CategoryObject entry : CATEGORY_PARAMS) {
+			CategoryObject copy = entry.copy();
+			String param = uri.getQueryParameter(copy.getKey());
+			if(param != null) {
+				if(param.equals(copy.getOnValue())) {
+					copy.setActive(true);
+				}
+				else if(param.equals(copy.getOffValue())) {
+					copy.setActive(false);
+				}
+			}
+			queryParameters.add(copy);
+		}
+
+		for (QueryObject entry : QUERY_PARAMS) {
+			QueryObject copy = entry.copy();
+			String param = uri.getQueryParameter(copy.getKey());
+			if(param != null) {
+				if(param.equals(copy.getOnValue())) {
+					copy.setActive(true);
+				}
+				else if(param.equals(copy.getOffValue())) {
+					copy.setActive(false);
+				}
+			}
+			queryParameters.add(copy);
+		}
+	}
+
 	public SearchController() {
 		for (CategoryObject entry : CATEGORY_PARAMS) {
 			CategoryObject copy = entry.copy();

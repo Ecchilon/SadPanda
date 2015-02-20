@@ -61,7 +61,7 @@ public class SearchEntry extends RelativeLayout {
     }
 
     public void setColor(int colorId) {
-        queryColor.setColorFilter(colorId, PorterDuff.Mode.MULTIPLY);
+        queryColor.setColorFilter(getResources().getColor(colorId), PorterDuff.Mode.MULTIPLY);
     }
 
     public void setText(String text) {
