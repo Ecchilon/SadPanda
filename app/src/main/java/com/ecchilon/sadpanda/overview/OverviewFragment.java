@@ -106,8 +106,6 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 	private boolean mIsFavorite;
 
-	private SearchController mSearchController = new SearchController();
-
 	public static OverviewFragment newInstance(@NonNull String url, boolean isFavorite, @Nullable String query,
 			SearchType searchType) {
 		OverviewFragment fragment = new OverviewFragment();
@@ -281,7 +279,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 	@Override
 	public void onMenuItemSelected(String item, boolean uploader) {
-		String url = uploader ? mSearchController.getUploaderUrl(item) : mSearchController.getUrl(item);
+		String url = uploader ? SearchController.getUploaderUrl(item) : SearchController.getDefaultUrl(item);
 
 		Intent searchIntent = new Intent(getActivity(), SearchActivity.class);
 		searchIntent.putExtra(OverviewFragment.URL_KEY, url);

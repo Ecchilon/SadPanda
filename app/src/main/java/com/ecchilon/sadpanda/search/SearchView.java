@@ -1,7 +1,5 @@
 package com.ecchilon.sadpanda.search;
 
-import android.net.Uri;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -9,15 +7,7 @@ import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Spinner;
-import android.widget.TextView;
-
 import com.ecchilon.sadpanda.R;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
-import java.util.List;
-
-import roboguice.util.Strings;
 
 /**
  * Created by Alex on 5-10-2014.

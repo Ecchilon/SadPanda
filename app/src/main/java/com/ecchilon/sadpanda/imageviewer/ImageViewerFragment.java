@@ -209,8 +209,7 @@ public class ImageViewerFragment extends RoboFragment implements FavoritesMenu.F
 
 	@Override
 	public void onMenuItemSelected(String item, boolean uploader) {
-		SearchController controller = new SearchController();
-		String url = uploader ? controller.getUploaderUrl(item) : controller.getUrl(item);
+		String url = uploader ? SearchController.getUploaderUrl(item) : SearchController.getDefaultUrl(item);
 
 		Intent searchIntent = new Intent(getActivity(), SearchActivity.class);
 		searchIntent.putExtra(OverviewFragment.URL_KEY, url);
