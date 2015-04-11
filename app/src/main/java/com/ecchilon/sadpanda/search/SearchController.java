@@ -52,7 +52,7 @@ public class SearchController {
 	private final List<QueryObject> queryParameters =
 			Lists.newArrayListWithCapacity(QUERY_PARAMS.size() + CATEGORY_PARAMS.size());
 
-	private int stars;
+	private int stars = 0;
 
 	public SearchController(String url) {
 		Uri uri = Uri.parse(url);
@@ -99,8 +99,18 @@ public class SearchController {
 	}
 
 	public String getUrl(String query) {
+		return buildUrl(queryParameters, query);
+	}
+
+	public static String getDefaultUrl(String query) {
+		List<QueryObject> list = Lists.newArrayList(QUERY_PARAMS);
+		list.addAll(CATEGORY_PARAMS);
+		return buildUrl(list, query);
+	}
+
+	private static String buildUrl(List<QueryObject> queryObjects, String query) {
 		Uri.Builder builder = new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).path("/");
-		for (QueryObject queryObj : queryParameters) {
+		for (QueryObject queryObj : queryObjects) {
 			if (!Strings.isEmpty(queryObj.getValue())) {
 				builder.appendQueryParameter(queryObj.getKey(), queryObj.getValue());
 			}
@@ -108,12 +118,12 @@ public class SearchController {
 
 		builder.appendQueryParameter(SEARCH_PARAM, query);
 
-		builder.appendQueryParameter(STAR_PARAM, Integer.toString(stars));
+		builder.appendQueryParameter(STAR_PARAM, Integer.toString(0));
 
 		return builder.build().toString();
 	}
 
-	public String getUploaderUrl(String uploader) {
+	public static String getUploaderUrl(String uploader) {
 		Uri.Builder builder = new Uri.Builder().scheme(SCHEME).authority(AUTHORITY).path("/uploader/" + uploader);
 		return builder.build().toString();
 	}
