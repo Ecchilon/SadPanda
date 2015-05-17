@@ -1,5 +1,7 @@
 package com.ecchilon.sadpanda.imageviewer;
 
+import java.io.IOException;
+
 import android.graphics.Point;
 import android.os.Bundle;
 import android.util.Log;
@@ -18,10 +20,12 @@ import android.widget.TextView;
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.SadPandaApp;
 import com.ecchilon.sadpanda.util.AsyncResultTask;
+import com.google.inject.Inject;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Downloader;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.RequestCreator;
+import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
 import uk.co.senab.photoview.PhotoView;
@@ -30,6 +34,8 @@ import uk.co.senab.photoview.PhotoView;
  * Created by Alex on 1/24/14.
  */
 public class ScreenSlidePageFragment extends RoboFragment implements AsyncResultTask.Callback<ImageEntry>, Callback {
+
+	private static final String TAG = ScreenSlidePageFragment.class.getSimpleName();
 
 	private static final String CENTER_HTML =
 			"<html>"
@@ -56,6 +62,7 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 
 	private static final String CONTENT_TYPE = "text/html";
 	private static final String CONTENT_ENCODING = "UTF-8";
+	private static final String ENTRY_KEY ="entryKey";
 
 	public static final String IMAGE_SCALE_KEY = "imageScaleKey";
 
@@ -73,6 +80,9 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 	private WebView mAnimatedView;
 	@InjectView(R.id.container)
 	private FrameLayout mContainer;
+
+	@Inject
+	private ObjectMapper objectMapper;
 
 	private ImageScale mImageScale = ImageScale.FIT_TO_SCREEN;
 
@@ -92,6 +102,27 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 			if (getArguments().containsKey(IMAGE_SCALE_KEY)) {
 				mImageScale = (ImageScale) getArguments().getSerializable(IMAGE_SCALE_KEY);
 			}
+		}
+
+		if(savedInstanceState != null && savedInstanceState.containsKey(ENTRY_KEY)) {
+			try {
+				mImageEntry = objectMapper.readValue(savedInstanceState.getString(ENTRY_KEY), ImageEntry.class);
+			}
+			catch (IOException e) {
+				Log.e(TAG, "Couldn't load entry from saved state", e);
+			}
+		}
+	}
+
+	@Override
+	public void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+
+		try {
+			outState.putString(ENTRY_KEY, objectMapper.writeValueAsString(mImageEntry));
+		}
+		catch (IOException e) {
+			Log.e(TAG, "Couldn't write entry to string", e);
 		}
 	}
 
@@ -173,7 +204,6 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 
 	private void loadSimpleView() {
 		RequestCreator requestCreator = Picasso.with(getActivity()).load(mImageEntry.getSrc());
-		requestCreator.skipMemoryCache();
 
 		switch (mImageScale) {
 			case DOUBLE:
