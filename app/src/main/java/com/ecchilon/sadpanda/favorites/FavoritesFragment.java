@@ -28,7 +28,8 @@ public class FavoritesFragment extends RoboFragment {
 		super.onViewCreated(view, savedInstanceState);
 
 		FavoritesPagerAdapter adapter =
-				new FavoritesPagerAdapter(getChildFragmentManager(), getString(R.string.favorites));
+				new FavoritesPagerAdapter(getChildFragmentManager(), getString(R.string.favorites),
+						getString(R.string.favorites_all));
 		mFavoritesPager.setAdapter(adapter);
 
 		mTabPage.setViewPager(mFavoritesPager);

@@ -9,12 +9,13 @@ android {
         minSdkVersion 14
         targetSdkVersion 22
         versionCode 5
-        versionName '0.9.2'
+        versionName '0.9.3'
     }
     buildTypes {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            zipAlignEnabled true
         }
     }
 
