@@ -1,11 +1,16 @@
 package com.ecchilon.sadpanda.overview;
 
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.util.TypedValue;
 import android.view.MenuItem;
 import android.view.View;
 import com.ecchilon.sadpanda.ErrorFragment;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.RoboAppCompatActivity;
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
 import com.ecchilon.sadpanda.search.OnSearchSubmittedListener;
 import com.google.inject.Inject;
@@ -13,11 +18,10 @@ import me.imid.swipebacklayout.lib.SwipeBackLayout;
 import me.imid.swipebacklayout.lib.Utils;
 import me.imid.swipebacklayout.lib.app.SwipeBackActivityBase;
 import me.imid.swipebacklayout.lib.app.SwipeBackActivityHelper;
-import roboguice.activity.RoboActionBarActivity;
 import roboguice.inject.ContentView;
 
-@ContentView(R.layout.activity_search)
-public class SearchActivity extends RoboActionBarActivity implements SwipeBackActivityBase, OnSearchSubmittedListener {
+@ContentView(R.layout.activity_overview)
+public class SearchActivity extends RoboAppCompatActivity implements SwipeBackActivityBase, OnSearchSubmittedListener {
 
 	public static final String QUERY_KEY = "ExhentaiQuery";
 
@@ -29,6 +33,9 @@ public class SearchActivity extends RoboActionBarActivity implements SwipeBackAc
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
+
 		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 		mHelper = new SwipeBackActivityHelper(this);
 		mHelper.onActivityCreate();

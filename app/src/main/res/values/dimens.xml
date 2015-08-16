@@ -15,4 +15,6 @@
     <dimen name="navigation_drawer_width">240dp</dimen>
     <dimen name="thumb_overview_size">120dp</dimen>
     <dimen name="thumb_height">100dp</dimen>
+    <dimen name="actionbar_height">56dp</dimen>
+    <dimen name="header_height">200dp</dimen>
 </resources>

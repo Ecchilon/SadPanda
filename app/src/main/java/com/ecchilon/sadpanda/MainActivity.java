@@ -2,13 +2,20 @@ package com.ecchilon.sadpanda;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Handler;
+import android.support.design.widget.NavigationView;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.Menu;
+import android.util.TypedValue;
 import android.view.MenuItem;
+import android.view.View;
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
 import com.ecchilon.sadpanda.auth.LoginFragment;
 import com.ecchilon.sadpanda.favorites.FavoritesFragment;
@@ -16,20 +23,21 @@ import com.ecchilon.sadpanda.overview.OverviewFragment;
 import com.ecchilon.sadpanda.overview.SearchActivity;
 import com.ecchilon.sadpanda.preferences.PandaPreferenceActivity;
 import com.ecchilon.sadpanda.search.OnSearchSubmittedListener;
+import com.ecchilon.sadpanda.util.Nullable;
 import com.google.inject.Inject;
-import roboguice.activity.RoboActionBarActivity;
-import roboguice.inject.ContentView;
+import roboguice.inject.InjectView;
 
-
-@ContentView(R.layout.activity_main)
-public class MainActivity extends RoboActionBarActivity implements LoginFragment.LoginListener,
-		NavigationDrawerFragment.NavigationDrawerCallbacks, OnSearchSubmittedListener {
+public class MainActivity extends RoboAppCompatActivity implements LoginFragment.LoginListener,
+		OnSearchSubmittedListener, NavigationView.OnNavigationItemSelectedListener {
 
 	public static final String DEFAULT_QUERY_KEY = "defaultQueryKey";
 	private static final String DEFAULT_QUERY_URL = "http://exhentai.org";
 
 	private static final String OVERVIEW_TAG = "PandaOverviewTag";
 	private static final String FAVORITES_TAG = "PandaFavoritesTag";
+
+	private static final long DRAWER_CLOSE_DELAY_MS = 250;
+	private static final String NAV_ITEM_ID = "navItemId";
 
 	@Inject
 	private ExhentaiAuth mAuth;
@@ -39,89 +47,57 @@ public class MainActivity extends RoboActionBarActivity implements LoginFragment
 
 	private LoginFragment mLoginFragment;
 
-	private NavigationDrawerFragment mNavigationDrawerFragment;
+	private final Handler mDrawerActionHandler = new Handler();
 
-	private CharSequence mTitle;
+	@Nullable
+	@InjectView(R.id.drawer_layout)
+	private DrawerLayout mDrawerLayout;
+
+	private ActionBarDrawerToggle mDrawerToggle;
+	private int mNavItemId;
 
 	@Override
 	protected void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setTitle(R.string.front_page);
 
-		if (savedInstanceState == null) {
-			if (mAuth.isLoggedIn()) {
-				showOverviewFragment();
-			}
-			else {
-				showErrorFragment();
-				showLoginFragment();
-			}
-		}
-
-		mNavigationDrawerFragment = (NavigationDrawerFragment)
-				getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
-		mTitle = getTitle();
-
-		// Set up the drawer.
-		mNavigationDrawerFragment.setUp(
-				R.id.navigation_drawer,
-				(DrawerLayout) findViewById(R.id.drawer_layout));
-	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		if (!mNavigationDrawerFragment.isDrawerOpen()) {
-			// Only show items in the action bar relevant to this screen
-			// if the drawer is not showing. Otherwise, let the drawer
-			// decide what to show in the action bar.
-			getMenuInflater().inflate(R.menu.main, menu);
-			restoreActionBar();
-			return super.onCreateOptionsMenu(menu);
-		}
-		return super.onCreateOptionsMenu(menu);
-	}
-
-	@Override
-	public boolean onPrepareOptionsMenu(Menu menu) {
-		MenuItem login = menu.findItem(R.id.login_menu);
-
-		if (login == null) {
-			return true;
-		}
-
-		if (mAuth.isLoggedIn()) {
-			login.setTitle(R.string.logout_menu);
+		if (null == savedInstanceState) {
+			mNavItemId = R.id.front_page;
 		}
 		else {
-			login.setTitle(R.string.login_menu);
+			mNavItemId = savedInstanceState.getInt(NAV_ITEM_ID);
 		}
 
-		return true;
+		if (!mAuth.isLoggedIn()) {
+			showLoginFragment();
+		}
+		else {
+			showMainContent();
+		}
 	}
 
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		switch (item.getItemId()) {
-			case R.id.login_menu:
-				showLoginFragment();
-				return true;
-			case R.id.preferences:
-				openPreferences();
-				return true;
-		}
+	private void navigate(int navItemId) {
+		switch (navItemId) {
+			case R.id.front_page:
+				showOverviewFragment();
+				break;
+			case R.id.favorites:
+				FragmentManager fragmentManager = getSupportFragmentManager();
 
-		return super.onOptionsItemSelected(item);
+				FavoritesFragment fragment = (FavoritesFragment) fragmentManager.findFragmentByTag(FAVORITES_TAG);
+				if (fragment == null) {
+					fragment = new FavoritesFragment();
+				}
+
+				fragmentManager.beginTransaction()
+						.replace(R.id.container, fragment, FAVORITES_TAG)
+						.commit();
+				break;
+		}
 	}
 
 	private void openPreferences() {
 		Intent preferences = new Intent(this, PandaPreferenceActivity.class);
 		startActivity(preferences);
-	}
-
-	public void restoreActionBar() {
-		ActionBar actionBar = getSupportActionBar();
-		actionBar.setDisplayShowTitleEnabled(true);
-		actionBar.setTitle(mTitle);
 	}
 
 	private void showLoginFragment() {
@@ -139,54 +115,101 @@ public class MainActivity extends RoboActionBarActivity implements LoginFragment
 	}
 
 	private void showOverviewFragment() {
-		FragmentManager fragmentManager = getSupportFragmentManager();
-
-		OverviewFragment fragment = (OverviewFragment) fragmentManager.findFragmentByTag(OVERVIEW_TAG);
-		if(fragment == null) {
-			fragment = OverviewFragment.newInstance(getDefaultQuery(), false, null, OverviewFragment.SearchType.ADVANCED);
-		}
-
-		fragmentManager.beginTransaction()
-				.replace(R.id.container, fragment, OVERVIEW_TAG)
+		getSupportFragmentManager().beginTransaction()
+				.replace(R.id.container, OverviewFragment.newInstance(getDefaultQuery(), false, null,
+						OverviewFragment.SearchType.ADVANCED))
 				.commit();
-	}
-
-	@Override
-	public void onNavigationDrawerItemSelected(int position) {
-		switch (position) {
-			case 0:
-				showOverviewFragment();
-				break;
-			case 1:
-				FragmentManager fragmentManager = getSupportFragmentManager();
-
-				FavoritesFragment fragment = (FavoritesFragment) fragmentManager.findFragmentByTag(FAVORITES_TAG);
-				if(fragment == null) {
-					fragment = new FavoritesFragment();
-				}
-
-				fragmentManager.beginTransaction()
-						.replace(R.id.container, fragment, FAVORITES_TAG)
-						.commit();
-				break;
-		}
 	}
 
 	private String getDefaultQuery() {
 		return mPreferences.getString(DEFAULT_QUERY_KEY, DEFAULT_QUERY_URL);
 	}
 
-	private void showErrorFragment() {
-		FragmentManager fragmentManager = getSupportFragmentManager();
-		fragmentManager.beginTransaction()
-				.replace(R.id.container, ErrorFragment.newInstance(R.string.login_request))
-				.commit();
+	@Override
+	public boolean onNavigationItemSelected(MenuItem menuItem) {
+		int id = menuItem.getItemId();
+
+		if (id == mNavItemId) {
+			return true;
+		}
+
+		if (id == R.id.settings) {
+			openPreferences();
+		}
+		else if (id == R.id.logout) {
+			setContentView(new View(this)); //because inserting null produces an NPE
+			mAuth.logout();
+			showLoginFragment();
+		}
+		else {
+			menuItem.setChecked(true);
+			mNavItemId = menuItem.getItemId();
+
+			mDrawerLayout.closeDrawer(GravityCompat.START);
+			mDrawerActionHandler.postDelayed(new Runnable() {
+				@Override
+				public void run() {
+					navigate(mNavItemId);
+				}
+			}, DRAWER_CLOSE_DELAY_MS);
+		}
+		return true;
+	}
+
+	@Override
+	public void onConfigurationChanged(final Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+		mDrawerToggle.onConfigurationChanged(newConfig);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(final MenuItem item) {
+		if (item.getItemId() == android.support.v7.appcompat.R.id.home) {
+			return mDrawerToggle.onOptionsItemSelected(item);
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+	@Override
+	public void onBackPressed() {
+		if (mDrawerLayout.isDrawerOpen(GravityCompat.START)) {
+			mDrawerLayout.closeDrawer(GravityCompat.START);
+		}
+		else {
+			super.onBackPressed();
+		}
+	}
+
+	@Override
+	protected void onSaveInstanceState(final Bundle outState) {
+		super.onSaveInstanceState(outState);
+		outState.putInt(NAV_ITEM_ID, mNavItemId);
 	}
 
 	@Override
 	public void onSuccess() {
 		closeLoginFragment();
-		showOverviewFragment();
+		showMainContent();
+	}
+
+	private void showMainContent() {
+		setContentView(R.layout.activity_main);
+
+		Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+		setSupportActionBar(toolbar);
+		setTitle(R.string.front_page);
+
+		NavigationView navigationView = (NavigationView) findViewById(R.id.nav_drawer);
+		navigationView.setNavigationItemSelectedListener(this);
+
+		navigationView.getMenu().findItem(mNavItemId).setChecked(true);
+
+		mDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, toolbar, R.string.open,
+				R.string.close);
+		mDrawerLayout.setDrawerListener(mDrawerToggle);
+		mDrawerToggle.syncState();
+
+		navigate(mNavItemId);
 	}
 
 	@Override
@@ -197,4 +220,5 @@ public class MainActivity extends RoboActionBarActivity implements LoginFragment
 
 		startActivity(searchIntent);
 	}
+
 }
