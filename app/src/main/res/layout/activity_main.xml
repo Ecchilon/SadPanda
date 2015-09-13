@@ -7,17 +7,28 @@
 		android:fitsSystemWindows="true">
 
 	<LinearLayout
-			android:orientation="vertical"
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"
+			android:orientation="vertical"
 			>
 
 		<android.support.v7.widget.Toolbar
 				android:id="@+id/toolbar"
 				android:theme="@style/AppBarTheme"
 				android:layout_width="match_parent"
-				android:layout_height="@dimen/actionbar_height"
+				android:layout_height="?attr/actionBarSize"
 				app:popupTheme="@style/Theme.AppCompat.Light.NoActionBar"
+				/>
+
+		<android.support.design.widget.TabLayout
+				android:id="@+id/tabs"
+				android:theme="@style/AppBarTheme"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				app:tabGravity="fill"
+				app:tabMode="scrollable"
+				app:tabIndicatorColor="@color/white"
+				app:tabIndicatorHeight="@dimen/indicator_height"
 				/>
 
 		<FrameLayout

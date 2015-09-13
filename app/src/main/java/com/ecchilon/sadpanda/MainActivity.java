@@ -6,14 +6,12 @@ import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.design.widget.NavigationView;
-import android.support.v4.app.Fragment;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
-import android.util.TypedValue;
 import android.view.MenuItem;
 import android.view.View;
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
@@ -28,7 +26,7 @@ import com.google.inject.Inject;
 import roboguice.inject.InjectView;
 
 public class MainActivity extends RoboAppCompatActivity implements LoginFragment.LoginListener,
-		OnSearchSubmittedListener, NavigationView.OnNavigationItemSelectedListener {
+		OnSearchSubmittedListener, NavigationView.OnNavigationItemSelectedListener, TabContainer {
 
 	public static final String DEFAULT_QUERY_KEY = "defaultQueryKey";
 	private static final String DEFAULT_QUERY_URL = "http://exhentai.org";
@@ -52,6 +50,9 @@ public class MainActivity extends RoboAppCompatActivity implements LoginFragment
 	@Nullable
 	@InjectView(R.id.drawer_layout)
 	private DrawerLayout mDrawerLayout;
+
+	@InjectView(R.id.tabs)
+	private TabLayout tabs;
 
 	private ActionBarDrawerToggle mDrawerToggle;
 	private int mNavItemId;
@@ -78,9 +79,11 @@ public class MainActivity extends RoboAppCompatActivity implements LoginFragment
 	private void navigate(int navItemId) {
 		switch (navItemId) {
 			case R.id.front_page:
+				tabs.setVisibility(View.GONE);
 				showOverviewFragment();
 				break;
 			case R.id.favorites:
+				tabs.setVisibility(View.VISIBLE);
 				FragmentManager fragmentManager = getSupportFragmentManager();
 
 				FavoritesFragment fragment = (FavoritesFragment) fragmentManager.findFragmentByTag(FAVORITES_TAG);
@@ -220,5 +223,12 @@ public class MainActivity extends RoboAppCompatActivity implements LoginFragment
 
 		startActivity(searchIntent);
 	}
+	@Override
+	public TabLayout getTabs() {
+		if(tabs.getVisibility() == View.GONE) {
+			throw new IllegalStateException("Tabs are not available right now!");
+		}
 
+		return tabs;
+	}
 }
