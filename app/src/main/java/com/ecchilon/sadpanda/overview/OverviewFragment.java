@@ -8,7 +8,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
@@ -356,7 +356,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 			if (newDisplayedPage != mCurrentDisplayedPage) {
 				mCurrentDisplayedPage = newDisplayedPage;
-				((ActionBarActivity) getActivity()).getSupportActionBar()
+				((AppCompatActivity) getActivity()).getSupportActionBar()
 						.setSubtitle(mSubTitle + (mCurrentDisplayedPage + 1));
 			}
 		}

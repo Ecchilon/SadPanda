@@ -47,6 +47,7 @@ public class ExhentaiAuth {
 		}
 	}
 
+	private static final String USERNAME_KEY = "pandaUserNameKey";
 	public static final String MEMBER_KEY = "pandaMemberKey";
 	public static final String HASH_KEY = "pandaHashKey";
 	public static final String SESSION_KEY = "pandaSessionKey";
@@ -69,14 +70,13 @@ public class ExhentaiAuth {
 	}
 
 	public void logout() {
-		assertNotMainThread();
-
 		getCookieStore().clear();
 
 		mSharedPrefs.edit()
 				.remove(MEMBER_KEY)
 				.remove(HASH_KEY)
 				.remove(SESSION_KEY)
+				.remove(USERNAME_KEY)
 				.apply();
 	}
 
@@ -151,6 +151,7 @@ public class ExhentaiAuth {
 					.putString(MEMBER_KEY, memberId)
 					.putString(HASH_KEY, passHash)
 					.putString(SESSION_KEY, sessionId)
+					.putString(USERNAME_KEY, username)
 					.apply();
 
 			return ExhentaiResult.SUCCESS;
@@ -174,6 +175,10 @@ public class ExhentaiAuth {
 		}
 
 		return false;
+	}
+
+	public String getUserName() {
+		return mSharedPrefs.getString(USERNAME_KEY, null);
 	}
 
 	private CookieStore getCookieStore() {

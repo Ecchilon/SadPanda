@@ -11,22 +11,23 @@ import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.NavUtils;
 import android.support.v4.app.TaskStackBuilder;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.RoboAppCompatActivity;
 import com.ecchilon.sadpanda.api.DataLoader;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.ecchilon.sadpanda.util.AsyncResultTask;
 import com.google.inject.Inject;
 import org.codehaus.jackson.map.ObjectMapper;
-import roboguice.activity.RoboActionBarActivity;
 import roboguice.inject.ContentView;
 
 @ContentView(R.layout.activity_image)
-public class ImageViewerActivity extends RoboActionBarActivity implements ImageViewerFragment.VisibilityToggler,
+public class ImageViewerActivity extends RoboAppCompatActivity implements ImageViewerFragment.VisibilityToggler,
 		ThumbFragment.OnThumbSelectedListener, ImageViewerFragment.PageSelectedListener {
 
 	private static final String GALLERY_ENTRY_KEY = "galleryEntryKey";
@@ -58,6 +59,9 @@ public class ImageViewerActivity extends RoboActionBarActivity implements ImageV
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
+		Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+		setSupportActionBar(toolbar);
 
 		if (savedInstanceState != null) {
 			try {

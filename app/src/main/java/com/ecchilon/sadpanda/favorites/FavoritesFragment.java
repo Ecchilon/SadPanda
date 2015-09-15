@@ -5,8 +5,9 @@ import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import com.astuetz.PagerSlidingTabStrip;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.TabContainer;
+import org.apache.commons.lang.IllegalClassException;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
 
@@ -14,9 +15,6 @@ public class FavoritesFragment extends RoboFragment {
 
 	@InjectView(R.id.pager)
 	private ViewPager mFavoritesPager;
-
-	@InjectView(R.id.tabs)
-	private PagerSlidingTabStrip mTabPage;
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -30,9 +28,14 @@ public class FavoritesFragment extends RoboFragment {
 		FavoritesPagerAdapter adapter =
 				new FavoritesPagerAdapter(getChildFragmentManager(), getString(R.string.favorites),
 						getString(R.string.favorites_all));
+
 		mFavoritesPager.setAdapter(adapter);
 
-		mTabPage.setViewPager(mFavoritesPager);
-		mTabPage.setTextColorResource(R.color.white);
+		try {
+			((TabContainer) getActivity()).getTabs().setupWithViewPager(mFavoritesPager);
+		}
+		catch (ClassCastException e) {
+			throw new IllegalArgumentException("parent activity should implement " + TabContainer.class.getSimpleName());
+		}
 	}
 }

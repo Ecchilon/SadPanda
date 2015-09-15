@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.ecchilon.sadpanda.HeaderView
+		xmlns:android="http://schemas.android.com/apk/res/android"
+		android:layout_width="match_parent"
+		android:layout_height="@dimen/header_height"
+		android:background="@color/dark_gray"
+		>
+	<TextView
+			android:id="@+id/username"
+			android:layout_alignParentBottom="true"
+			android:textAppearance="@style/TextAppearance.AppCompat.Large.Inverse"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+	        android:layout_margin="@dimen/small_margin"
+			/>
+</com.ecchilon.sadpanda.HeaderView>

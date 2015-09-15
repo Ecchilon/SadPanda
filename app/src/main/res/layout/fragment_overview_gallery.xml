@@ -1,38 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	xmlns:tools="http://schemas.android.com/tools"
-	android:layout_width="match_parent"
-	android:layout_height="match_parent"
-	tools:context="com.ecchilon.sadpanda.overview.OverviewFragment"
-	>
-
-	<android.support.v4.widget.SwipeRefreshLayout
-		android:id="@+id/swipe_container"
+<FrameLayout
+		xmlns:android="http://schemas.android.com/apk/res/android"
+		xmlns:tools="http://schemas.android.com/tools"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
+		tools:context="com.ecchilon.sadpanda.overview.OverviewFragment"
 		>
 
-		<com.paging.listview.PagingListView
-			android:id="@+id/overview_list"
+	<android.support.v4.widget.SwipeRefreshLayout
+			android:id="@+id/swipe_container"
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"
-			/>
+			>
+
+		<com.paging.listview.PagingListView
+				android:id="@+id/overview_list"
+				android:layout_width="match_parent"
+				android:layout_height="match_parent"
+				/>
 	</android.support.v4.widget.SwipeRefreshLayout>
 
 	<ProgressBar
-		android:id="@android:id/empty"
-		android:layout_width="@dimen/progress_bar_size"
-		android:layout_height="@dimen/progress_bar_size"
-		android:layout_gravity="center"
-		android:visibility="gone"
-		/>
+			android:id="@android:id/empty"
+			android:layout_width="@dimen/progress_bar_size"
+			android:layout_height="@dimen/progress_bar_size"
+			android:layout_gravity="center"
+			android:visibility="gone"
+			/>
 
 	<TextView
-		android:id="@+id/no_content"
-		android:text="@string/nothing_here"
-		android:layout_width="wrap_content"
-		android:layout_height="wrap_content"
-		android:layout_gravity="center"
-		android:visibility="gone"
-		/>
+			android:id="@+id/no_content"
+			android:text="@string/nothing_here"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:layout_gravity="center"
+			android:visibility="gone"
+			/>
 </FrameLayout>

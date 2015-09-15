@@ -17,6 +17,7 @@
 		<activity
 				android:name="com.ecchilon.sadpanda.MainActivity"
 				android:label="@string/app_name"
+				android:theme="@style/AppTheme.Main"
 				android:windowSoftInputMode="adjustPan">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN"/>
