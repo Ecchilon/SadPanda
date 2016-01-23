@@ -2,6 +2,7 @@ package com.ecchilon.sadpanda.api;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import okhttp3.Response;
 import org.apache.http.HttpResponse;
 
 /**
@@ -13,32 +14,27 @@ import org.apache.http.HttpResponse;
 public class ApiCallException extends Exception {
 
     private final ApiErrorCode code;
-    private final String url;
-    private final HttpResponse response;
+    private final Response response;
 
     public ApiCallException(ApiErrorCode code) {
         this.code = code;
-        url = null;
         response = null;
     }
 
-    public ApiCallException(ApiErrorCode code, String url, HttpResponse response) {
+    public ApiCallException(ApiErrorCode code, Response response) {
         this.code = code;
-        this.url = url;
         this.response = response;
     }
 
     public ApiCallException(ApiErrorCode code, String detailMessage) {
         super(detailMessage);
         this.code = code;
-        url = null;
         response = null;
     }
 
     public ApiCallException(ApiErrorCode code, Throwable throwable) {
         super(throwable);
         this.code = code;
-        url = null;
         response = null;
     }
 }

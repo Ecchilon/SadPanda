@@ -12,26 +12,20 @@ import java.util.regex.Pattern;
 
 import android.net.Uri;
 import android.support.annotation.NonNull;
+import com.ecchilon.sadpanda.auth.ExhentaiAuth;
 import com.ecchilon.sadpanda.imageviewer.ImageEntry;
 import com.ecchilon.sadpanda.imageviewer.ThumbEntry;
 import com.ecchilon.sadpanda.overview.Category;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.google.inject.Inject;
+import okhttp3.CacheControl;
+import okhttp3.FormBody;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import org.apache.commons.lang3.StringEscapeUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -51,56 +45,61 @@ public class DataLoader {
 	private static final String PHOTO_URL_EX = "http://exhentai.org/s/%s/%d-%d";
 	private static final String GALLERY_PATTERN = "http://(g\\.e-|ex)hentai\\.org/g/(\\d+)/(\\w+)/";
 
-	private static final Pattern pPhotoUrl = Pattern.compile("width:(\\d+)px; height:(\\d+)px; background:transparent url\\((.+?)\\) -(\\d+)px 0 no-repeat\"><a href=\"http://exhentai\\.org/s/(\\w+?)/\\d+-(\\d+)");
+	private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+
+	private static final Pattern pPhotoUrl = Pattern.compile(
+			"width:(\\d+)px; height:(\\d+)px; background:transparent url\\((.+?)\\) -(\\d+)px 0 no-repeat\"><a "
+					+ "href=\"http://exhentai\\.org/s/(\\w+?)/\\d+-(\\d+)");
 	private static final Pattern pShowkey = Pattern.compile("var showkey.*=.*\"([\\w-]+?)\";");
 	private static final Pattern pImageSrc = Pattern.compile("<img id=\"img\" src=\"(.+)/(.+?)\"");
 	private static final Pattern pGalleryHref = Pattern.compile("<a href=\"" + GALLERY_PATTERN + "\" onmouseover");
 	private static final Pattern pGalleryUrl = Pattern.compile(GALLERY_PATTERN);
 
-	private final HttpClient mHttpClient;
-	private final HttpContext mHttpContext;
+	private final OkHttpClient client;
+	private final ExhentaiAuth auth;
 
 	@Inject
-	private DataLoader(HttpClient httpClient, HttpContext context) {
-		mHttpClient = httpClient;
-		mHttpContext = context;
-	}
-
-	private HttpResponse getHttpResponse(HttpRequestBase httpRequest) throws IOException {
-		return mHttpClient.execute(httpRequest, mHttpContext);
+	DataLoader(OkHttpClient client, ExhentaiAuth auth) {
+		this.client = client;
+		this.auth = auth;
 	}
 
 	private JSONObject callApi(JSONObject json) throws ApiCallException {
 		assertNotMainThread();
-		String responseStr = "";
 
+		Request request = new Request.Builder()
+				.addHeader("Accept", "application/json")
+				.addHeader("Cookie", auth.getSessionCookie())
+				.url(API_URL_EX)
+				.post(RequestBody.create(JSON, json.toString()))
+				.build();
+
+		Response response;
+		String responseStr;
 		try {
-			HttpPost httpPost = new HttpPost(API_URL_EX);
+			response = client.newCall(request).execute();
+			responseStr = response.body().string();
+		}
+		catch (IOException e) {
+			throw new ApiCallException(ApiErrorCode.IO_ERROR, e);
+		}
 
-			httpPost.setHeader("Accept", "application/json");
-			httpPost.setHeader("Content-Type", "application/json");
-			httpPost.setEntity(new StringEntity(json.toString()));
-
-			HttpResponse response = getHttpResponse(httpPost);
-			responseStr = readResponse(response);
-
-			JSONObject result = new JSONObject(responseStr);
+		JSONObject result;
+		try {
+			result = new JSONObject(responseStr);
 
 			if (result.has("error")) {
 				String error = result.getString("error");
 
 				if (error.equals("Key mismatch")) {
-					throw new ApiCallException(ApiErrorCode.SHOWKEY_INVALID, API_URL_EX, response);
+					throw new ApiCallException(ApiErrorCode.SHOWKEY_INVALID, response);
 				}
 				else {
-					throw new ApiCallException(ApiErrorCode.API_ERROR, API_URL_EX, response);
+					throw new ApiCallException(ApiErrorCode.API_ERROR, response);
 				}
 			}
 
 			return result;
-		}
-		catch (IOException e) {
-			throw new ApiCallException(ApiErrorCode.IO_ERROR, e);
 		}
 		catch (JSONException e) {
 			throw new ApiCallException(ApiErrorCode.JSON_ERROR, e);
@@ -123,9 +122,12 @@ public class DataLoader {
 		try {
 			String url = getGalleryUrl(gallery, page);
 
-			HttpGet httpGet = new HttpGet(url);
-			HttpResponse response = getHttpResponse(httpGet);
-			String content = readResponse(response);
+			Request request = new Request.Builder()
+					.addHeader("Cookie", auth.getSessionCookie())
+					.url(url)
+					.get()
+					.build();
+			String content = client.newCall(request).execute().body().string();
 
 			List<ImageEntry> list = new ArrayList<ImageEntry>();
 			long galleryId = gallery.getGalleryId();
@@ -220,22 +222,30 @@ public class DataLoader {
 		try {
 			String url = getImagePageUrl(entry);
 
-			HttpGet httpGet = new HttpGet(url);
-			HttpResponse response = getHttpResponse(httpGet);
-			String content = readResponse(response);
+			Request request = new Request.Builder()
+					.addHeader("Cookie", auth.getSessionCookie())
+					.url(url)
+					.get()
+					.build();
+			Response response = client.newCall(request).execute();
+			String content = response.body().string();
 
 			if (content.contains("This gallery is pining for the fjords")) {
-				throw new ApiCallException(ApiErrorCode.GALLERY_PINNED, url, response);
+				throw new ApiCallException(ApiErrorCode.GALLERY_PINNED, response);
 			}
 			else if (content.equals("Invalid page.")) {
 				List<ImageEntry> list = getPhotoList(gallery, entry.getPage() / PHOTO_PER_PAGE);
 				entry = list.get(0);
-				httpGet = new HttpGet(getImagePageUrl(entry));
-				response = getHttpResponse(httpGet);
-				content = readResponse(response);
+				request = new Request.Builder()
+						.addHeader("Cookie", auth.getSessionCookie())
+						.url(getImagePageUrl(entry))
+						.get()
+						.build();
+				response = client.newCall(request).execute();
+				content = response.body().string();
 
 				if (content.equals("Invalid page.")) {
-					throw new ApiCallException(ApiErrorCode.SHOWKEY_EXPIRED, url, response);
+					throw new ApiCallException(ApiErrorCode.SHOWKEY_EXPIRED, response);
 				}
 			}
 
@@ -247,7 +257,7 @@ public class DataLoader {
 			}
 
 			if (Strings.isEmpty(showkey)) {
-				throw new ApiCallException(ApiErrorCode.SHOWKEY_NOT_FOUND, url, response);
+				throw new ApiCallException(ApiErrorCode.SHOWKEY_NOT_FOUND, response);
 			}
 			else {
 				gallery.setShowkey(showkey);
@@ -272,12 +282,14 @@ public class DataLoader {
 		String url = getGalleryIndexUrl(base, page);
 
 		try {
-			HttpGet httpGet = new HttpGet(url);
+			Request.Builder builder = new Request.Builder()
+					.addHeader("Cookie", auth.getSessionCookie())
+					.url(url)
+					.get();
 			if (!cache) {
-				httpGet.addHeader("Cache-Control", "no-cache");
+				builder.cacheControl(CacheControl.FORCE_NETWORK);
 			}
-			HttpResponse response = getHttpResponse(httpGet);
-			String html = readResponse(response);
+			String html = client.newCall(builder.build()).execute().body().string();
 			Matcher matcher = pGalleryHref.matcher(html);
 			JSONArray gidlist = new JSONArray();
 
@@ -426,26 +438,26 @@ public class DataLoader {
 	}
 
 	private void updateFavorite(@NonNull String favCat, @NonNull String favNote,
-			GalleryEntry entry) throws IOException {
+			GalleryEntry entry) throws IOException, ApiCallException {
 		assertNotMainThread();
 
-		HttpPost httpPost = new HttpPost(String.format(FAVORITES_URL_EX, entry.getGalleryId(), entry.getToken()));
-		httpPost.setHeader("Content-Type", "application/x-www-form-urlencoded");
-
 		String submitValue = favCat.equals("favdel") ? "Apply+Changes" : "Add+to+Favorites";
+		RequestBody body = new FormBody.Builder()
+				.addEncoded("favcat", favCat)
+				.addEncoded("favnote", favNote)
+				.add("submit", submitValue)
+				.build();
 
-		List<NameValuePair> nvps = new ArrayList<NameValuePair>();
-		nvps.add(new BasicNameValuePair("favcat", URLEncoder.encode(favCat, "utf-8")));
-		nvps.add(new BasicNameValuePair("favnote", URLEncoder.encode(favNote, "utf-8")));
-		nvps.add(new BasicNameValuePair("submit", submitValue));
+		Request request = new Request.Builder()
+				.url(String.format(FAVORITES_URL_EX, entry.getGalleryId(), entry.getToken()))
+				.addHeader("Cookie", auth.getSessionCookie())
+				.post(body)
+				.build();
 
-		httpPost.setEntity(new UrlEncodedFormEntity(nvps));
+		Response response = client.newCall(request).execute();
 
-		HttpResponse response;
-		response = getHttpResponse(httpPost);
-
-		if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-			throw new ClientProtocolException();
+		if (response.isSuccessful()) {
+			throw new ApiCallException(ApiErrorCode.API_ERROR, response);
 		}
 	}
 
@@ -523,16 +535,5 @@ public class DataLoader {
 
 	private static String getImagePageUrl(ImageEntry entry) {
 		return String.format(PHOTO_URL_EX, entry.getToken(), entry.getGalleryId(), entry.getPage());
-	}
-
-	private static String readResponse(HttpResponse response) throws IOException {
-		HttpEntity entity = response.getEntity();
-
-		if (entity != null) {
-			return EntityUtils.toString(entity);
-		}
-		else {
-			return null;
-		}
 	}
 }
