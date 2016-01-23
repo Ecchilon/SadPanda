@@ -3,7 +3,6 @@ package com.ecchilon.sadpanda.api;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import okhttp3.Response;
-import org.apache.http.HttpResponse;
 
 /**
  * Created by SkyArrow on 2014/2/19.

@@ -20,8 +20,7 @@ import static android.view.MenuItem.*;
 
 import android.content.Context;
 import android.graphics.drawable.Drawable;
-import android.support.v7.internal.view.menu.MenuBuilder;
-import android.support.v7.internal.view.menu.MenuDialogHelper;
+import android.support.v7.view.menu.MenuBuilder;
 import android.view.ContextMenu;
 import android.view.MenuItem;
 import android.view.View;
@@ -83,21 +82,15 @@ public class ContextMenuBuilder extends MenuBuilder implements ContextMenu {
 
 	/**
 	 * Shows this context menu, allowing the optional original view (and its ancestors) to add items.
-	 *
-	 * @return If the context menu was shown, the {@link MenuDialogHelper} for dismissing it. Otherwise, null.
 	 */
-	public MenuDialogHelper show() {
+	public Void show() {
 		if(mCreateListener != null) {
 			mCreateListener.onCreateMenu(this, getContext());
 		}
 
 		if (getVisibleItems().size() > 0) {
-			MenuDialogHelper helper = new MenuDialogHelper(this);
-			helper.show(null);
-
-			return helper;
+			//FIXME no more MenuDialogHelper
 		}
-
 		return null;
 	}
 

@@ -79,3 +79,6 @@
 -dontwarn com.google.**
 -dontwarn org.codehaus.**
 -dontwarn com.squareup.**
+
+#retrolambda
+-dontwarn java.lang.invoke.*
