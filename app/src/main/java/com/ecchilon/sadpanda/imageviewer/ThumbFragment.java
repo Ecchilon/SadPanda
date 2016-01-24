@@ -13,8 +13,8 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.Toast;
-import com.ecchilon.sadpanda.PageLoadTaskFactory;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.imageviewer.data.GalleryPageCache;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.google.inject.Inject;
 import com.squareup.picasso.Picasso;
@@ -52,7 +52,7 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 	private GridView mThumbOverview;
 
 	@Inject
-	private PageLoadTaskFactory mTaskFactory;
+	private GalleryPageCache galleryPageCache;
 
 	@Inject
 	private ObjectMapper mObjectMapper;
@@ -107,7 +107,7 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 	public void onViewCreated(View view, Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 
-		ThumbAdapter adapter = new ThumbAdapter(mTaskFactory, mGalleryEntry);
+		ThumbAdapter adapter = new ThumbAdapter(galleryPageCache, mGalleryEntry);
 		mThumbOverview.setAdapter(adapter);
 		mThumbOverview.setOnItemClickListener(this);
 		if (savedInstanceState != null) {

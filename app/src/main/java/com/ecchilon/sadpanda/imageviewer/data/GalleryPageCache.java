@@ -19,11 +19,10 @@ public class GalleryPageCache {
 		this.dataLoader = dataLoader;
 	}
 
-	public Observable<List<ImageEntry>> getGalleryPage(GalleryEntry entry, int page) {
-		int galleryPageIndex = page / DataLoader.PHOTO_PER_PAGE;
+	public Observable<List<ImageEntry>> getGalleryPage(GalleryEntry entry, int galleryPageIndex) {
 		Observable<List<ImageEntry>> galleryPage = galleryPages.get(galleryPageIndex);
 		if(galleryPage == null) {
-			//By setting getPhotoList up with a replay we ensure it acts as a cache to which other pages can subscribe as well
+			//By setting getPhotoList up with a replay it acts as a cache to which other pages can subscribe as well
 			ConnectableObservable<List<ImageEntry>> replay =
 					dataLoader.getPhotoList(entry, galleryPageIndex).replay();
 			replay.connect();

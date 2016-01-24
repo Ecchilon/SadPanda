@@ -72,7 +72,7 @@ public class DataLoader {
 	}
 
 	private Observable<JSONObject> callApi(JSONObject json) {
-		return Observable.create(subscriber -> {
+		return Observable.<JSONObject>create(subscriber -> {
 			Request request = new Request.Builder()
 					.addHeader("Accept", "application/json")
 					.addHeader("Cookie", auth.getSessionCookie())
@@ -121,7 +121,7 @@ public class DataLoader {
 							OnErrorThrowable.from(new ApiCallException(JSON_ERROR, e)));
 				}
 			}
-		});
+		}).subscribeOn(Schedulers.io());
 	}
 
 	public Observable<JSONObject> callApi(String method, JSONObject json) {
