@@ -10,7 +10,7 @@ import okhttp3.Response;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class ApiCallException extends Exception {
+public class ApiCallException extends RuntimeException {
 
     private final ApiErrorCode code;
     private final Response response;
