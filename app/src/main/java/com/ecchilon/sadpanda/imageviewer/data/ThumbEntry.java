@@ -1,4 +1,4 @@
-package com.ecchilon.sadpanda.imageviewer;
+package com.ecchilon.sadpanda.imageviewer.data;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

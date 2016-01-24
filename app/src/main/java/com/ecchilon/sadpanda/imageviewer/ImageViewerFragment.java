@@ -1,7 +1,6 @@
 package com.ecchilon.sadpanda.imageviewer;
 
 import java.io.IOException;
-import java.util.List;
 
 import android.app.Activity;
 import android.content.Context;
@@ -21,13 +20,13 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.GridView;
 import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
-import com.ecchilon.sadpanda.api.DataLoader;
 import com.ecchilon.sadpanda.favorites.AddFavoriteTask;
 import com.ecchilon.sadpanda.favorites.FavoritesTaskFactory;
 import com.ecchilon.sadpanda.favorites.RemoveFavoriteTask;
+import com.ecchilon.sadpanda.imageviewer.data.ImageLoader;
+import com.ecchilon.sadpanda.imageviewer.data.ImageLoaderFactory;
 import com.ecchilon.sadpanda.menu.FavoritesMenu;
 import com.ecchilon.sadpanda.menu.GalleryMenu;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
@@ -35,11 +34,8 @@ import com.ecchilon.sadpanda.overview.OverviewFragment;
 import com.ecchilon.sadpanda.overview.SearchActivity;
 import com.ecchilon.sadpanda.search.SearchController;
 import com.ecchilon.sadpanda.util.AddFavoriteCallback;
-import com.ecchilon.sadpanda.util.AsyncResultTask;
 import com.ecchilon.sadpanda.util.RemoveFavoriteCallback;
 import com.google.inject.Inject;
-import com.paging.listview.PagingGridView;
-import com.paging.listview.PagingView;
 import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;

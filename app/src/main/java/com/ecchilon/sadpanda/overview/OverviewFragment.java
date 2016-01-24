@@ -323,7 +323,6 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	@Override
 	public void onLoadMoreItems() {
 		mDataLoader.getGalleryIndex(mQueryUrl, mCurrentPage++)
-				.subscribeOn(Schedulers.io())
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(galleryEntries -> {
 					if (mRefreshLayout != null) {

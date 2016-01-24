@@ -7,7 +7,6 @@ import static com.ecchilon.sadpanda.util.FuncUtils.not;
 import static com.ecchilon.sadpanda.util.NetUtils.assertNotMainThread;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -17,12 +16,10 @@ import java.util.regex.Pattern;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import com.ecchilon.sadpanda.auth.ExhentaiAuth;
-import com.ecchilon.sadpanda.imageviewer.ImageEntry;
-import com.ecchilon.sadpanda.imageviewer.ThumbEntry;
+import com.ecchilon.sadpanda.imageviewer.data.ImageEntry;
+import com.ecchilon.sadpanda.imageviewer.data.ThumbEntry;
 import com.ecchilon.sadpanda.overview.Category;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
-import com.ecchilon.sadpanda.util.FuncUtils;
-import com.google.common.base.Functions;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import okhttp3.CacheControl;
@@ -39,6 +36,7 @@ import org.json.JSONObject;
 import roboguice.util.Strings;
 import rx.Observable;
 import rx.exceptions.OnErrorThrowable;
+import rx.schedulers.Schedulers;
 
 
 /**
@@ -140,57 +138,39 @@ public class DataLoader {
 	}
 
 	public Observable<List<ImageEntry>> getPhotoList(GalleryEntry gallery, int page) {
-		return Observable.create(subscriber -> {
-			assertNotMainThread();
-			try {
-				String url = getGalleryUrl(gallery, page);
+		return getContent(getGalleryUrl(gallery, page))
+				.map(content -> {
+					List<ImageEntry> list = new ArrayList<>();
+					long galleryId = gallery.getGalleryId();
+					Matcher matcher = pPhotoUrl.matcher(content);
 
-				Request request = new Request.Builder()
-						.addHeader("Cookie", auth.getSessionCookie())
-						.url(url)
-						.get()
-						.build();
-				String content = client.newCall(request).execute().body().string();
+					while (matcher.find()) {
+						int width = Integer.parseInt(matcher.group(1));
+						int height = Integer.parseInt(matcher.group(2));
+						String thumbUrl = matcher.group(3);
+						int offset = Integer.parseInt(matcher.group(4));
 
-				List<ImageEntry> list = new ArrayList<>();
-				long galleryId = gallery.getGalleryId();
-				Matcher matcher = pPhotoUrl.matcher(content);
+						ThumbEntry thumb = new ThumbEntry()
+								.setWidth(width)
+								.setHeight(height)
+								.setUrl(thumbUrl)
+								.setOffset(offset);
 
-				while (matcher.find()) {
-					int width = Integer.parseInt(matcher.group(1));
-					int height = Integer.parseInt(matcher.group(2));
-					String thumbUrl = matcher.group(3);
-					int offset = Integer.parseInt(matcher.group(4));
+						String token = matcher.group(5);
+						int photoPage = Integer.parseInt(matcher.group(6));
 
-					ThumbEntry thumb = new ThumbEntry()
-							.setWidth(width)
-							.setHeight(height)
-							.setUrl(thumbUrl)
-							.setOffset(offset);
+						ImageEntry photo = new ImageEntry()
+								.setGalleryId(galleryId)
+								.setToken(token)
+								.setPage(photoPage)
+								.setThumbEntry(thumb);
 
-					String token = matcher.group(5);
-					int photoPage = Integer.parseInt(matcher.group(6));
+						list.add(photo);
+					}
 
-					ImageEntry photo = new ImageEntry()
-							.setGalleryId(galleryId)
-							.setToken(token)
-							.setPage(photoPage)
-							.setThumbEntry(thumb);
-
-					list.add(photo);
-				}
-
-				if (!subscriber.isUnsubscribed()) {
-					subscriber.onNext(list);
-					subscriber.onCompleted();
-				}
-			}
-			catch (IOException e) {
-				if (!subscriber.isUnsubscribed()) {
-					subscriber.onError(OnErrorThrowable.from(new ApiCallException(ApiErrorCode.IO_ERROR, e)));
-				}
-			}
-		});
+					return list;
+				})
+				.subscribeOn(Schedulers.computation());
 	}
 
 	public Observable<ImageEntry> getPhotoInfo(GalleryEntry gallery, ImageEntry photo) {
@@ -226,7 +206,8 @@ public class DataLoader {
 								photo.setSrc(source);
 
 								return photo;
-							});
+							})
+							.subscribeOn(Schedulers.computation());
 				});
 	}
 
@@ -290,7 +271,8 @@ public class DataLoader {
 
 						return showkey;
 					}
-				});
+				})
+				.subscribeOn(Schedulers.computation());
 	}
 
 	private Observable<String> getContent(String url) {
@@ -298,7 +280,7 @@ public class DataLoader {
 	}
 
 	private Observable<String> getContent(String url, boolean useCache) {
-		return Observable.create(subscriber -> {
+		return Observable.<String>create(subscriber -> {
 			Request.Builder builder = new Request.Builder()
 					.addHeader("Cookie", auth.getSessionCookie())
 					.url(url)
@@ -322,7 +304,7 @@ public class DataLoader {
 				subscriber.onNext(content);
 				subscriber.onCompleted();
 			}
-		});
+		}).subscribeOn(Schedulers.io());
 	}
 
 	public Observable<List<GalleryEntry>> getGalleryIndex(String base, boolean cache) {

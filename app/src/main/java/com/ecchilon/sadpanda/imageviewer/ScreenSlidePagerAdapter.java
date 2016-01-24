@@ -4,7 +4,9 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
+import com.ecchilon.sadpanda.imageviewer.data.ImageLoader;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
+import rx.android.schedulers.AndroidSchedulers;
 
 /**
  * Created by Alex on 1/22/14.
@@ -28,7 +30,9 @@ public class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
 		ScreenSlidePageFragment frag = new ScreenSlidePageFragment();
 		frag.setArguments(arguments);
 
-		loader.getImage(position + 1, frag);
+		loader.getImage(position)
+				.observeOn(AndroidSchedulers.mainThread())
+				.subscribe(frag::onImageRetrieved, frag::onImageError);
 		return frag;
 	}
 

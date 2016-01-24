@@ -12,10 +12,11 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import com.ecchilon.sadpanda.PageLoadTaskFactory;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.imageviewer.data.ImageEntry;
+import com.ecchilon.sadpanda.imageviewer.data.ThumbEntry;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.ecchilon.sadpanda.util.AsyncResultTask;
 import com.google.common.collect.Lists;
-import com.paging.listview.PagingBaseAdapter;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
 

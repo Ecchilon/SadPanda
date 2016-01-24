@@ -3,7 +3,7 @@ package com.ecchilon.sadpanda;
 import java.util.List;
 
 import com.ecchilon.sadpanda.api.DataLoader;
-import com.ecchilon.sadpanda.imageviewer.ImageEntry;
+import com.ecchilon.sadpanda.imageviewer.data.ImageEntry;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.ecchilon.sadpanda.util.AsyncResultTask;
 import com.google.inject.Inject;
