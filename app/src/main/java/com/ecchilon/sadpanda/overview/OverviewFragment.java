@@ -40,6 +40,8 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 /**
  * A fragment representing a list of Items. Large screen devices (such as tablets) are supported by replacing the
@@ -320,7 +322,28 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 	@Override
 	public void onLoadMoreItems() {
-		new LoadItemsTask().execute();
+		mDataLoader.getGalleryIndex(mQueryUrl, mCurrentPage++)
+				.subscribeOn(Schedulers.io())
+				.observeOn(AndroidSchedulers.mainThread())
+				.subscribe(galleryEntries -> {
+					if (mRefreshLayout != null) {
+						mRefreshLayout.setRefreshing(false);
+					}
+
+					//TODO apparently not always batch size?
+					mListView.onFinishLoading(galleryEntries.size() >= GALLERY_BATCH_SIZE,
+							galleryEntries);
+
+					if (mAdapter.getCount() == 0) {
+						showEmpty();
+					}
+				}, throwable -> {
+					Log.e(TAG, "Couldn't retrieve gallery items", throwable);
+					if(mRefreshLayout != null) {
+						mRefreshLayout.setRefreshing(false);
+					}
+					showEmpty();
+				});
 	}
 
 	private void showEmpty() {
@@ -359,56 +382,6 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 				((AppCompatActivity) getActivity()).getSupportActionBar()
 						.setSubtitle(mSubTitle + (mCurrentDisplayedPage + 1));
 			}
-		}
-	}
-
-	private class LoadItemsTask extends AsyncResultTask<Void, Void, List<GalleryEntry>> implements AsyncResultTask
-			.Callback<List<GalleryEntry>> {
-
-		public LoadItemsTask() {
-			super(false);
-			setListener(this);
-		}
-
-		@Override
-		protected List<GalleryEntry> call(Void... params) throws Exception {
-			return mDataLoader.getGalleryIndex(mQueryUrl, mCurrentPage++);
-		}
-
-		@Override
-		public void onSuccess(List<GalleryEntry> entryList) {
-			if (mRefreshLayout != null) {
-				mRefreshLayout.setRefreshing(false);
-			}
-
-			mListView.onFinishLoading(entryList.size() >= GALLERY_BATCH_SIZE,
-					entryList);
-
-			if (mAdapter.getCount() == 0) {
-				showEmpty();
-			}
-
-			//TODO show reload for page on failure
-		}
-
-		@Override
-		public void onError(Exception e) {
-			Log.e(TAG, "Failed to load gallery index", e);
-			showEmpty();
-		}
-	}
-
-	private class AddFavoriteOverviewCallback extends AddFavoriteCallback {
-
-		public AddFavoriteOverviewCallback(Context context) {
-			super(context);
-		}
-
-		@Override
-		public void onSuccess(GalleryEntry result) {
-			super.onSuccess(result);
-
-			onRefresh();
 		}
 	}
 
