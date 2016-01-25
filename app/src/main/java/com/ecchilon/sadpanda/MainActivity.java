@@ -119,7 +119,7 @@ public class MainActivity extends RoboAppCompatActivity implements LoginFragment
 
 	private void showOverviewFragment() {
 		getSupportFragmentManager().beginTransaction()
-				.replace(R.id.container, OverviewFragment.newInstance(getDefaultQuery(), false, null,
+				.replace(R.id.container, OverviewFragment.newInstance(getDefaultQuery(), null, null,
 						OverviewFragment.SearchType.ADVANCED))
 				.commit();
 	}
@@ -217,11 +217,7 @@ public class MainActivity extends RoboAppCompatActivity implements LoginFragment
 
 	@Override
 	public void onSearchSubmitted(String url, String query) {
-		Intent searchIntent = new Intent(this, SearchActivity.class);
-		searchIntent.putExtra(OverviewFragment.URL_KEY, url);
-		searchIntent.putExtra(SearchActivity.QUERY_KEY, query);
-
-		startActivity(searchIntent);
+		startActivity(SearchActivity.newInstance(this, query, url));
 	}
 	@Override
 	public TabLayout getTabs() {

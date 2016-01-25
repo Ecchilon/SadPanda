@@ -1,6 +1,6 @@
 package com.ecchilon.sadpanda.search;
 
-import static com.ecchilon.sadpanda.overview.OverviewFragment.*;
+import static com.ecchilon.sadpanda.overview.OverviewFragment.SearchType;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -13,17 +13,15 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import com.ecchilon.sadpanda.R;
-import com.ecchilon.sadpanda.overview.OverviewFragment;
-import com.ecchilon.sadpanda.overview.SearchActivity;
 import com.google.common.collect.Lists;
 import roboguice.util.Strings;
 
@@ -32,8 +30,23 @@ public class SearchDialogFragment extends DialogFragment {
 	static final String TAG = "SearchDialogFragment";
 
 	private static final String HISTORY_FILE = "history.txt";
+	private static final String QUERY_KEY = "searchQueryKey";
+	private static final String URL_KEY = "searchUrlKey";
+	private static final String SEARCH_TYPE_KEY = "searchTypeKey";
 
 	private static final int MAX_HISTORY_SIZE = 3;
+
+	public static SearchDialogFragment newInstance(@Nullable String query, String url, SearchType type) {
+		SearchDialogFragment fragment = new SearchDialogFragment();
+		Bundle args = new Bundle();
+		args.putString(URL_KEY, url);
+		args.putSerializable(SEARCH_TYPE_KEY, type);
+		if(query != null) {
+			args.putString(QUERY_KEY, query);
+		}
+		fragment.setArguments(args);
+		return fragment;
+	}
 
 	private OnSearchSubmittedListener mListener;
 
@@ -48,12 +61,12 @@ public class SearchDialogFragment extends DialogFragment {
 
 		final View searchView = LayoutInflater.from(getActivity()).inflate(R.layout.search_view, null);
 
-		mSearchView = new SearchView(searchView, getArguments().getString(OverviewFragment.URL_KEY));
+		mSearchView = new SearchView(searchView, getArguments().getString(URL_KEY));
 
 		HistoryEditText query = (HistoryEditText) searchView.findViewById(R.id.search_query);
 
-		if(getArguments().containsKey(SearchActivity.QUERY_KEY)) {
-			query.setText(getArguments().getString(SearchActivity.QUERY_KEY));
+		if(getArguments().containsKey(QUERY_KEY)) {
+			query.setText(getArguments().getString(QUERY_KEY));
 		}
 
 		final List<String> history = getHistory();
@@ -64,12 +77,9 @@ public class SearchDialogFragment extends DialogFragment {
 		query.setAdapter(adapter);
 
 		if(getSearchType(SearchType.ADVANCED) == SearchType.ADVANCED) {
-			searchView.findViewById(R.id.show_advanced).setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					View advancedView = getDialog().findViewById(R.id.advanced_view_container);
-					advancedView.setVisibility(advancedView.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
-				}
+			searchView.findViewById(R.id.show_advanced).setOnClickListener(v -> {
+				View advancedView = getDialog().findViewById(R.id.advanced_view_container);
+				advancedView.setVisibility(advancedView.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE);
 			});
 		}
 		else {
@@ -78,20 +88,14 @@ public class SearchDialogFragment extends DialogFragment {
 
 		builder.setView(searchView);
 
-		builder.setPositiveButton(R.string.action_search, new DialogInterface.OnClickListener() {
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				addToHistory(history, mSearchView.getQuery());
+		builder.setPositiveButton(R.string.action_search, (dialog, which) -> {
+			addToHistory(history, mSearchView.getQuery());
 
-				mListener.onSearchSubmitted(mSearchView.getUrl(), mSearchView.getQuery());
-				dismiss();
-			}
+			mListener.onSearchSubmitted(mSearchView.getUrl(), mSearchView.getQuery());
+			dismiss();
 		});
-		builder.setNegativeButton(R.string.action_cancel, new DialogInterface.OnClickListener() {
-			@Override
-			public void onClick(DialogInterface dialog, int which) {
-				dismiss();
-			}
+		builder.setNegativeButton(R.string.action_cancel, (dialog, which) -> {
+			dismiss();
 		});
 
 		return builder.create();

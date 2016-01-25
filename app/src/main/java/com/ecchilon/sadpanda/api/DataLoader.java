@@ -442,31 +442,21 @@ public class DataLoader {
 				.map(galleryEntries -> galleryEntries.get(0));
 	}
 
-	public void removeGalleryFromFavorites(GalleryEntry entry) throws ApiCallException {
-		try {
-			updateFavorite("favdel", "", entry);
-		}
-		catch (IOException e) {
-			throw new ApiCallException(ApiErrorCode.IO_ERROR, e);
-		}
+	public Observable<Void> removeGalleryFromFavorites(GalleryEntry entry) {
+		return updateFavorite("favdel", "", entry);
 	}
 
-	public void addGalleryToFavorites(int favoritesCategory, String favNote,
-			GalleryEntry entry) throws ApiCallException {
-		try {
+	public Observable<Void> addGalleryToFavorites(int favoritesCategory, String favNote,
+			GalleryEntry entry) {
 			if (favNote == null) {
 				favNote = "";
 			}
 
-			updateFavorite(Integer.toString(favoritesCategory), favNote, entry);
-		}
-		catch (IOException e) {
-			throw new ApiCallException(ApiErrorCode.IO_ERROR, e);
-		}
+		return updateFavorite(Integer.toString(favoritesCategory), favNote, entry);
 	}
 
 	private Observable<Void> updateFavorite(@NonNull String favCat, @NonNull String favNote,
-			GalleryEntry entry) throws IOException, ApiCallException {
+			GalleryEntry entry) {
 		return Observable.create(subscriber -> {
 			String submitValue = favCat.equals("favdel") ? "Apply+Changes" : "Add+to+Favorites";
 			RequestBody body = new FormBody.Builder()

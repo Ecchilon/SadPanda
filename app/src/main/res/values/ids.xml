@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<item type="id" name="remove_favorite"/>
+	<item type="id" name="view_by_group"/>
+	<item type="id" name="add_favorites_group"/>
+	<item type="id" name="view_uploader"/>
+</resources>

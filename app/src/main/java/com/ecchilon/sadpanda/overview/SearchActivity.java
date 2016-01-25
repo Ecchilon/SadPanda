@@ -1,5 +1,7 @@
 package com.ecchilon.sadpanda.overview;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.Toolbar;
@@ -20,9 +22,17 @@ import roboguice.inject.ContentView;
 @ContentView(R.layout.activity_overview)
 public class SearchActivity extends RoboAppCompatActivity implements SwipeBackActivityBase, OnSearchSubmittedListener {
 
-	public static final String QUERY_KEY = "ExhentaiQuery";
+	private static final String QUERY_KEY = "ExhentaiQuery";
+	private static final String URL_KEY = "ExhentaiQuery";
 
 	private SwipeBackActivityHelper mHelper;
+
+	public static Intent newInstance(Context context, String query, String url) {
+		Intent searchIntent = new Intent(context, SearchActivity.class);
+		searchIntent.putExtra(URL_KEY, url);
+		searchIntent.putExtra(QUERY_KEY, query);
+		return searchIntent;
+	}
 
 	@Inject
 	private ExhentaiAuth mExhentaiAuth;
@@ -43,7 +53,7 @@ public class SearchActivity extends RoboAppCompatActivity implements SwipeBackAc
 		getSupportActionBar().setTitle(query);
 
 		if (savedInstanceState == null) {
-			String url = getIntent().getStringExtra(OverviewFragment.URL_KEY);
+			String url = getIntent().getStringExtra(URL_KEY);
 			onSearchSubmitted(url, query);
 		}
 	}
@@ -97,7 +107,7 @@ public class SearchActivity extends RoboAppCompatActivity implements SwipeBackAc
 		getSupportActionBar().setTitle(query);
 
 		if (mExhentaiAuth.isLoggedIn()) {
-			fragment = OverviewFragment.newInstance(url, false, query, OverviewFragment.SearchType.ADVANCED);
+			fragment = OverviewFragment.newInstance(url, null, query, OverviewFragment.SearchType.ADVANCED);
 		}
 		else {
 			fragment = ErrorFragment.newInstance(R.string.login_request);
