@@ -42,11 +42,6 @@ import rx.exceptions.OnErrorThrowable;
 import rx.schedulers.Schedulers;
 
 
-/**
- * Created by SkyArrow on 2014/2/19.
- *
- * @author alex on 2014/9/23.
- */
 public class DataLoader {
 	public static final int PHOTO_PER_PAGE = 40;
 	private static final String FAVORITES_URL_EX = "http://exhentai.org/gallerypopups.php?gid=%d&t=%s&act=addfav";
@@ -84,11 +79,9 @@ public class DataLoader {
 							.post(RequestBody.create(JSON, json.toString()))
 							.build();
 
-					Response response;
 					String responseStr;
 					try {
-						response = client.newCall(request).execute();
-						responseStr = response.body().string();
+						responseStr = client.newCall(request).execute().body().string();
 					}
 					catch (IOException e) {
 							throw OnErrorThrowable.from(e);
@@ -102,10 +95,10 @@ public class DataLoader {
 							String error = result.getString("error");
 
 							if (error.equals("Key mismatch")) {
-									throw OnErrorThrowable.from(new ApiCallException(SHOWKEY_INVALID, response));
+									throw OnErrorThrowable.from(new ApiCallException(SHOWKEY_INVALID));
 							}
 							else {
-								throw OnErrorThrowable.from(new ApiCallException(API_ERROR, response));
+								throw OnErrorThrowable.from(new ApiCallException(API_ERROR));
 							}
 						}
 
@@ -211,7 +204,7 @@ public class DataLoader {
 					String showKey = galleryEntry.getShowkey();
 
 					if (showKey == null || Strings.isEmpty(showKey)) {
-						return getShowkey(gallery, photo);
+						return getShowkey(galleryEntry, photo);
 					}
 					else {
 						return Observable.just(showKey);
@@ -242,10 +235,7 @@ public class DataLoader {
 					}
 					else if (content.equals("Invalid page.")) {
 						return getPhotoList(gallery, entry.getPage() / PHOTO_PER_PAGE)
-								.flatMap(imageEntries -> {
-									ImageEntry newEntry = imageEntries.get(0);
-									return getContent(getImagePageUrl(newEntry));
-								});
+								.flatMap(imageEntries -> getContent(getImagePageUrl(imageEntries.get(0))));
 					}
 					else {
 						return Observable.just(content);
@@ -285,8 +275,7 @@ public class DataLoader {
 			}
 			String content;
 			try {
-				Response response = client.newCall(builder.build()).execute();
-				content = response.body().string();
+				content = client.newCall(builder.build()).execute().body().string();
 			}
 			catch (IOException e) {
 				throw OnErrorThrowable.from(e);
@@ -296,7 +285,7 @@ public class DataLoader {
 		}).subscribeOn(Schedulers.io());
 	}
 
-	public Observable<List<GalleryEntry>> getGalleryIndex(String base, boolean cache) {
+	public Observable<List<GalleryEntry>> getGalleryIndex(String base) {
 		return getGalleryIndex(base, 0);
 	}
 
@@ -474,7 +463,7 @@ public class DataLoader {
 					}
 
 					if (!response.isSuccessful()) {
-						throw OnErrorThrowable.from(new ApiCallException(API_ERROR, response));
+						throw OnErrorThrowable.from(new ApiCallException(API_ERROR));
 					}
 					else {
 						return (Void)null;

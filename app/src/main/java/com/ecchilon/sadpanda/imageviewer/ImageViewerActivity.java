@@ -21,7 +21,6 @@ import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.RoboAppCompatActivity;
 import com.ecchilon.sadpanda.api.DataLoader;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
-import com.ecchilon.sadpanda.util.AsyncResultTask;
 import com.google.inject.Inject;
 import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.inject.ContentView;

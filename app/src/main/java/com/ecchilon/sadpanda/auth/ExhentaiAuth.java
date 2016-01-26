@@ -1,7 +1,7 @@
 package com.ecchilon.sadpanda.auth;
 
-import static com.ecchilon.sadpanda.auth.ExhentaiAuth.ExhentaiError.*;
-import static com.ecchilon.sadpanda.util.NetUtils.assertNotMainThread;
+import static com.ecchilon.sadpanda.auth.ExhentaiAuth.ExhentaiError.INCORRECT_AUTH;
+import static com.ecchilon.sadpanda.auth.ExhentaiAuth.ExhentaiError.UNKNOWN;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -17,9 +17,9 @@ import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import okhttp3.Response;
-import rx.Single;
+import rx.Observable;
 import rx.exceptions.OnErrorThrowable;
+import rx.schedulers.Schedulers;
 
 public class ExhentaiAuth {
 	public enum ExhentaiError {
@@ -43,11 +43,6 @@ public class ExhentaiAuth {
 		private final ExhentaiError error;
 
 		AuthException(ExhentaiError error) {
-			this.error = error;
-		}
-
-		AuthException(ExhentaiError error, Throwable cause) {
-			super(cause);
 			this.error = error;
 		}
 	}
@@ -85,93 +80,86 @@ public class ExhentaiAuth {
 				.apply();
 	}
 
-	public Single<Void> login(final String username, String password) {
-		return Single.create(subscriber -> {
-			assertNotMainThread();
-			RequestBody requestBody = new FormBody.Builder()
-					.addEncoded("UserName", username)
-					.addEncoded("PassWord", password)
-					.add("CookieDate", "1")
-					.build();
+	public Observable<Void> login(final String username, String password) {
+		return Observable.just(username)
+				.map(user -> {
+					RequestBody requestBody = new FormBody.Builder()
+							.addEncoded("UserName", username)
+							.addEncoded("PassWord", password)
+							.add("CookieDate", "1")
+							.build();
 
-			Request request = new Request.Builder()
-					.url(LOGIN)
-					.post(requestBody)
-					.build();
+					Request request = new Request.Builder()
+							.url(LOGIN)
+							.post(requestBody)
+							.build();
 
-			Response response;
-			String body;
-			try {
-				response = client.newCall(request).execute();
-				body = response.body().string();
-			}
-			catch (IOException e) {
-				if(!subscriber.isUnsubscribed()) {
-					subscriber.onError(OnErrorThrowable.from(new AuthException(CONNECTION_FAILURE, e)));
-				}
-				return;
-			}
-
-
-			if (body.contains("You are now logged in as: " + username)) {
-				List<String> cookies = Lists.newArrayList();
-				for(String cookie : response.headers("Set-Cookie")) {
-					Collections.addAll(cookies, cookie.split(";"));
-				}
-
-				String memberId = null, passHash = null, sessionId = null;
-
-				for (String cookie : cookies) {
-					String[] kvPair = cookie.split("=");
-					if(kvPair.length != 2) {
-						continue;
+					try {
+						return client.newCall(request).execute();
 					}
-					String key = kvPair[0];
-					String value = kvPair[1];
-					if(IPB_MEMBER_ID.equals(key)) {
-						memberId = value;
+					catch (IOException e) {
+						throw OnErrorThrowable.from(e);
 					}
-					else if(IPB_PASS_HASH.equals(key)) {
-						passHash = value;
+				})
+				.subscribeOn(Schedulers.io())
+				.observeOn(Schedulers.computation())
+				.map(response -> {
+					String body = null;
+					try {
+						body = response.body().string();
 					}
-					else if(IPB_SESSION_ID.equals(key)) {
-						sessionId = value;
+					catch (IOException e) {
+						throw OnErrorThrowable.from(e);
 					}
-				}
+					if (body.contains("You are now logged in as: " + username)) {
+						List<String> cookies = Lists.newArrayList();
+						for(String cookie : response.headers("Set-Cookie")) {
+							Collections.addAll(cookies, cookie.split(";"));
+						}
 
-				if((memberId == null || passHash == null || sessionId == null) && !subscriber.isUnsubscribed()) {
-					subscriber.onError(OnErrorThrowable.from(new AuthException(INCORRECT_AUTH)));
-					return;
-				}
+						String memberId = null, passHash = null, sessionId = null;
 
-				sharedPreferences.edit()
-						.putString(MEMBER_KEY, memberId)
-						.putString(HASH_KEY, passHash)
-						.putString(SESSION_KEY, sessionId)
-						.putString(USERNAME_KEY, username)
-						.apply();
+						for (String cookie : cookies) {
+							String[] kvPair = cookie.split("=");
+							if(kvPair.length != 2) {
+								continue;
+							}
+							String key = kvPair[0];
+							String value = kvPair[1];
+							if(IPB_MEMBER_ID.equals(key)) {
+								memberId = value;
+							}
+							else if(IPB_PASS_HASH.equals(key)) {
+								passHash = value;
+							}
+							else if(IPB_SESSION_ID.equals(key)) {
+								sessionId = value;
+							}
+						}
 
-				if(!subscriber.isUnsubscribed()) {
-					subscriber.onSuccess(null);
-					return;
-				}
-			}
-			else {
-				for (ExhentaiError error : ExhentaiError.values()) {
-					if (body.contains(error.getErrorMessage())) {
-						if(!subscriber.isUnsubscribed()) {
-							subscriber.onError(OnErrorThrowable.from(new AuthException(error)));
-							return;
+						if((memberId == null || passHash == null || sessionId == null)) {
+							throw OnErrorThrowable.from(new AuthException(INCORRECT_AUTH));
+						}
+
+						sharedPreferences.edit()
+								.putString(MEMBER_KEY, memberId)
+								.putString(HASH_KEY, passHash)
+								.putString(SESSION_KEY, sessionId)
+								.putString(USERNAME_KEY, username)
+								.apply();
+
+						return null;
+					}
+					else {
+						for (ExhentaiError error : ExhentaiError.values()) {
+							if (body.contains(error.getErrorMessage())) {
+								throw OnErrorThrowable.from(new AuthException(error));
+							}
 						}
 					}
-				}
-			}
 
-
-			if(!subscriber.isUnsubscribed()) {
-				subscriber.onError(OnErrorThrowable.from(new AuthException(UNKNOWN)));
-			}
-		});
+					throw OnErrorThrowable.from(new AuthException(UNKNOWN));
+				});
 	}
 
 	public boolean isLoggedIn() {

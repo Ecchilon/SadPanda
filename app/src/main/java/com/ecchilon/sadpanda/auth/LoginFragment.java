@@ -82,21 +82,17 @@ public class LoginFragment extends RxDialogFragment {
 		Observable.combineLatest(RxTextView.textChanges(password),
 				RxTextView.textChanges(username), Pair::create)
 				.compose(bindToLifecycle())
-				.subscribe(textPair -> {
-					if(getDialog() != null) {
-						((AlertDialog) getDialog())
-								.getButton(DialogInterface.BUTTON_POSITIVE)
-								.setEnabled(textPair.first.length() > 0 && textPair.second.length() > 0);
-					}
-				});
+				.filter(chars -> getDialog() != null)
+				.subscribe(textPair ->
+					((AlertDialog) getDialog())
+							.getButton(DialogInterface.BUTTON_POSITIVE)
+							.setEnabled(textPair.first.length() > 0 && textPair.second.length() > 0)
+				);
 
 		RxTextView.editorActionEvents(password)
 				.compose(bindToLifecycle())
-				.subscribe(event -> {
-					if(event.actionId() == EditorInfo.IME_ACTION_SEND) {
-						performLogin();
-					}
-				});
+				.filter(event -> event.actionId() == EditorInfo.IME_ACTION_SEND)
+				.subscribe(event -> performLogin());
 
 		builder.setView(loginView);
 		builder.setTitle(R.string.login_title);
@@ -116,7 +112,6 @@ public class LoginFragment extends RxDialogFragment {
 		showProgress(true);
 
 		auth.login(username.getText().toString(), password.getText().toString())
-				.subscribeOn(Schedulers.io())
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(exhentaiResult -> {
 					dismiss();
