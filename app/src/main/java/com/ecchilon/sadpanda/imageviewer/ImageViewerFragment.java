@@ -145,7 +145,7 @@ public class ImageViewerFragment extends RoboFragment implements MenuBuilder.Gal
 				new ScreenSlidePagerAdapter(getChildFragmentManager(), loader, galleryEntry, createArguments());
 		viewPager.setAdapter(pagerAdapter);
 		viewPager.setGestureDetector(new GestureDetector(getActivity(), new SingleTapListener()));
-		viewPager.setOffscreenPageLimit(2);
+		viewPager.setOffscreenPageLimit(1);
 		viewPager.setOnPageChangeListener(new MyOnPageChangeListener());
 		if(savedInstanceState != null) {
 			viewPager.onRestoreInstanceState(savedInstanceState.getParcelable(PAGER_STATE_KEY));

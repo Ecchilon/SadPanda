@@ -1,10 +1,13 @@
 package com.ecchilon.sadpanda.api;
 
-import static com.ecchilon.sadpanda.api.ApiErrorCode.IO_ERROR;
-import static com.ecchilon.sadpanda.api.ApiErrorCode.JSON_ERROR;
-import static com.ecchilon.sadpanda.api.ApiErrorCode.TOKEN_NOT_FOUND;
+import static com.ecchilon.sadpanda.api.ApiErrorCode.API_ERROR;
+import static com.ecchilon.sadpanda.api.ApiErrorCode.GALLERY_PINNED;
+import static com.ecchilon.sadpanda.api.ApiErrorCode.PHOTO_NOT_FOUND;
+import static com.ecchilon.sadpanda.api.ApiErrorCode.SHOWKEY_INVALID;
+import static com.ecchilon.sadpanda.api.ApiErrorCode.SHOWKEY_NOT_FOUND;
+import static com.ecchilon.sadpanda.api.ApiErrorCode.TOKEN_INVALID;
+import static com.ecchilon.sadpanda.api.ApiErrorCode.TOKEN_OR_PAGE_INVALID;
 import static com.ecchilon.sadpanda.util.FuncUtils.not;
-import static com.ecchilon.sadpanda.util.NetUtils.assertNotMainThread;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -72,56 +75,47 @@ public class DataLoader {
 	}
 
 	private Observable<JSONObject> callApi(JSONObject json) {
-		return Observable.<JSONObject>create(subscriber -> {
-			Request request = new Request.Builder()
-					.addHeader("Accept", "application/json")
-					.addHeader("Cookie", auth.getSessionCookie())
-					.url(API_URL_EX)
-					.post(RequestBody.create(JSON, json.toString()))
-					.build();
+		return Observable.just(json)
+				.map(jsonObject -> {
+					Request request = new Request.Builder()
+							.addHeader("Accept", "application/json")
+							.addHeader("Cookie", auth.getSessionCookie())
+							.url(API_URL_EX)
+							.post(RequestBody.create(JSON, json.toString()))
+							.build();
 
-			Response response;
-			String responseStr;
-			try {
-				response = client.newCall(request).execute();
-				responseStr = response.body().string();
-			}
-			catch (IOException e) {
-				if (!subscriber.isUnsubscribed()) {
-					subscriber.onError(OnErrorThrowable.from(new ApiCallException(ApiErrorCode.IO_ERROR, e)));
-				}
-				return;
-			}
-
-			JSONObject result;
-			try {
-				result = new JSONObject(responseStr);
-
-				if (result.has("error")) {
-					String error = result.getString("error");
-
-					if (error.equals("Key mismatch") && !subscriber.isUnsubscribed()) {
-						subscriber.onError(
-								OnErrorThrowable.from(new ApiCallException(ApiErrorCode.SHOWKEY_INVALID, response)));
+					Response response;
+					String responseStr;
+					try {
+						response = client.newCall(request).execute();
+						responseStr = response.body().string();
 					}
-					else if (!subscriber.isUnsubscribed()) {
-						subscriber.onError(
-								OnErrorThrowable.from(new ApiCallException(ApiErrorCode.API_ERROR, response)));
+					catch (IOException e) {
+							throw OnErrorThrowable.from(e);
 					}
-				}
 
-				if (!subscriber.isUnsubscribed()) {
-					subscriber.onNext(result);
-					subscriber.onCompleted();
-				}
-			}
-			catch (JSONException e) {
-				if (!subscriber.isUnsubscribed()) {
-					subscriber.onError(
-							OnErrorThrowable.from(new ApiCallException(JSON_ERROR, e)));
-				}
-			}
-		}).subscribeOn(Schedulers.io());
+					JSONObject result;
+					try {
+						result = new JSONObject(responseStr);
+
+						if (result.has("error")) {
+							String error = result.getString("error");
+
+							if (error.equals("Key mismatch")) {
+									throw OnErrorThrowable.from(new ApiCallException(SHOWKEY_INVALID, response));
+							}
+							else {
+								throw OnErrorThrowable.from(new ApiCallException(API_ERROR, response));
+							}
+						}
+
+						return result;
+					}
+					catch (JSONException e) {
+						throw OnErrorThrowable.from(e);
+					}
+				})
+				.subscribeOn(Schedulers.io());
 	}
 
 	public Observable<JSONObject> callApi(String method, JSONObject json) {
@@ -131,7 +125,7 @@ public class DataLoader {
 						json.put("method", method);
 					}
 					catch (JSONException e) {
-						throw new ApiCallException(JSON_ERROR, e);
+						throw OnErrorThrowable.from(e);
 					}
 					return callApi(json);
 				});
@@ -139,6 +133,7 @@ public class DataLoader {
 
 	public Observable<List<ImageEntry>> getPhotoList(GalleryEntry gallery, int page) {
 		return getContent(getGalleryUrl(gallery, page))
+				.observeOn(Schedulers.computation())
 				.map(content -> {
 					List<ImageEntry> list = new ArrayList<>();
 					long galleryId = gallery.getGalleryId();
@@ -169,8 +164,7 @@ public class DataLoader {
 					}
 
 					return list;
-				})
-				.subscribeOn(Schedulers.computation());
+				});
 	}
 
 	public Observable<ImageEntry> getPhotoInfo(GalleryEntry gallery, ImageEntry photo) {
@@ -183,13 +177,14 @@ public class DataLoader {
 					}
 
 					return getPhotoRaw(galleryEntry, photo)
+							.observeOn(Schedulers.computation())
 							.map(jsonObject -> {
 								Matcher matcher = null;
 								try {
 									matcher = pImageSrc.matcher(jsonObject.getString("i3"));
 								}
 								catch (JSONException e) {
-									throw OnErrorThrowable.from(new ApiCallException(JSON_ERROR, e));
+									throw OnErrorThrowable.from(e);
 								}
 								String filename = null;
 								String source = null;
@@ -199,15 +194,14 @@ public class DataLoader {
 								}
 
 								if (Strings.isEmpty(pShowkey) || Strings.isEmpty(filename)) {
-									throw OnErrorThrowable.from(new ApiCallException(ApiErrorCode.PHOTO_NOT_FOUND));
+									throw OnErrorThrowable.from(new ApiCallException(PHOTO_NOT_FOUND));
 								}
 
 								photo.setFilename(filename);
 								photo.setSrc(source);
 
 								return photo;
-							})
-							.subscribeOn(Schedulers.computation());
+							});
 				});
 	}
 
@@ -232,7 +226,7 @@ public class DataLoader {
 						json.put("showkey", showKey);
 					}
 					catch (JSONException e) {
-						throw new ApiCallException(JSON_ERROR, e);
+						throw OnErrorThrowable.from(e);
 					}
 					return callApi("showpage", json);
 				});
@@ -240,9 +234,11 @@ public class DataLoader {
 
 	private Observable<String> getShowkey(GalleryEntry gallery, ImageEntry entry) {
 		return getContent(getImagePageUrl(entry))
+				.observeOn(Schedulers.computation())
 				.flatMap(content -> {
+
 					if (content.contains("This gallery is pining for the fjords")) {
-						throw OnErrorThrowable.from(new ApiCallException(ApiErrorCode.GALLERY_PINNED));
+						throw OnErrorThrowable.from(new ApiCallException(GALLERY_PINNED));
 					}
 					else if (content.equals("Invalid page.")) {
 						return getPhotoList(gallery, entry.getPage() / PHOTO_PER_PAGE)
@@ -264,15 +260,14 @@ public class DataLoader {
 					}
 
 					if (Strings.isEmpty(showkey)) {
-						throw new ApiCallException(ApiErrorCode.SHOWKEY_NOT_FOUND);
+						throw new ApiCallException(SHOWKEY_NOT_FOUND);
 					}
 					else {
 						gallery.setShowkey(showkey);
 
 						return showkey;
 					}
-				})
-				.subscribeOn(Schedulers.computation());
+				});
 	}
 
 	private Observable<String> getContent(String url) {
@@ -280,10 +275,10 @@ public class DataLoader {
 	}
 
 	private Observable<String> getContent(String url, boolean useCache) {
-		return Observable.<String>create(subscriber -> {
+		return Observable.just(url).map(requestUrl -> {
 			Request.Builder builder = new Request.Builder()
 					.addHeader("Cookie", auth.getSessionCookie())
-					.url(url)
+					.url(requestUrl)
 					.get();
 			if (!useCache) {
 				builder.cacheControl(CacheControl.FORCE_NETWORK);
@@ -294,16 +289,10 @@ public class DataLoader {
 				content = response.body().string();
 			}
 			catch (IOException e) {
-				if (!subscriber.isUnsubscribed()) {
-					subscriber.onError(new ApiCallException(ApiErrorCode.IO_ERROR, e));
-				}
-				return;
+				throw OnErrorThrowable.from(e);
 			}
 
-			if (!subscriber.isUnsubscribed()) {
-				subscriber.onNext(content);
-				subscriber.onCompleted();
-			}
+			return content;
 		}).subscribeOn(Schedulers.io());
 	}
 
@@ -317,6 +306,7 @@ public class DataLoader {
 
 	public Observable<List<GalleryEntry>> getGalleryIndex(String base, int page, boolean cache) {
 		return getContent(getGalleryIndexUrl(base, page), cache)
+				.observeOn(Schedulers.computation())
 				.flatMap(content -> {
 					Matcher matcher = pGalleryHref.matcher(content);
 					JSONArray gidlist = new JSONArray();
@@ -355,9 +345,9 @@ public class DataLoader {
 						obj.put("gidlist", gidlist);
 					}
 					catch (JSONException e) {
-						throw OnErrorThrowable.from(new ApiCallException(JSON_ERROR, e));
+						throw OnErrorThrowable.from(e);
 					}
-					return callApi("gdata", obj).map(this::getEntriesFromJson);
+					return callApi("gdata", obj).observeOn(Schedulers.computation()).map(this::getEntriesFromJson);
 				});
 	}
 
@@ -378,10 +368,10 @@ public class DataLoader {
 					String error = data.getString("token");
 
 					if (error.equals("Key missing, or incorrect key provided.")) {
-						throw new ApiCallException(ApiErrorCode.TOKEN_INVALID);
+						throw new ApiCallException(TOKEN_INVALID);
 					}
 					else {
-						throw new ApiCallException(ApiErrorCode.API_ERROR, error);
+						throw new ApiCallException(API_ERROR, error);
 					}
 				}
 
@@ -412,24 +402,27 @@ public class DataLoader {
 			return galleryList;
 		}
 		catch (JSONException e) {
-			throw OnErrorThrowable.from(new ApiCallException(JSON_ERROR, e));
+			throw OnErrorThrowable.from(e);
 		}
 	}
 
 	public Observable<GalleryEntry> getGallery(String url) {
-		Matcher matcher = pGalleryUrl.matcher(url);
+		return Observable.just(url)
+				.flatMap(galleryUrl -> {
+					Matcher matcher = pGalleryUrl.matcher(url);
 
-		if (matcher.find()) {
-			long id = Long.parseLong(matcher.group(2));
-			String token = matcher.group(3);
-			return getGallery(id, token);
-		}
-		else {
-			throw new ApiCallException(ApiErrorCode.TOKEN_OR_PAGE_INVALID);
-		}
+					if (matcher.find()) {
+						long id = Long.parseLong(matcher.group(2));
+						String token = matcher.group(3);
+						return getGallery(id, token);
+					}
+					else {
+						throw OnErrorThrowable.from(new ApiCallException(TOKEN_OR_PAGE_INVALID));
+					}
+				});
 	}
 
-	public Observable<GalleryEntry> getGallery(long id, String token) throws ApiCallException {
+	public Observable<GalleryEntry> getGallery(long id, String token) {
 		JSONArray gidlist = new JSONArray();
 		JSONArray arr = new JSONArray();
 
@@ -457,115 +450,36 @@ public class DataLoader {
 
 	private Observable<Void> updateFavorite(@NonNull String favCat, @NonNull String favNote,
 			GalleryEntry entry) {
-		return Observable.create(subscriber -> {
-			String submitValue = favCat.equals("favdel") ? "Apply+Changes" : "Add+to+Favorites";
-			RequestBody body = new FormBody.Builder()
-					.addEncoded("favcat", favCat)
-					.addEncoded("favnote", favNote)
-					.add("submit", submitValue)
-					.build();
+		return Observable.just(entry)
+				.map(galleryEntry -> {
+					String submitValue = favCat.equals("favdel") ? "Apply+Changes" : "Add+to+Favorites";
+					RequestBody body = new FormBody.Builder()
+							.addEncoded("favcat", favCat)
+							.addEncoded("favnote", favNote)
+							.add("submit", submitValue)
+							.build();
 
-			Request request = new Request.Builder()
-					.url(String.format(FAVORITES_URL_EX, entry.getGalleryId(), entry.getToken()))
-					.addHeader("Cookie", auth.getSessionCookie())
-					.post(body)
-					.build();
+					Request request = new Request.Builder()
+							.url(String.format(FAVORITES_URL_EX, entry.getGalleryId(), entry.getToken()))
+							.addHeader("Cookie", auth.getSessionCookie())
+							.post(body)
+							.build();
 
-			Response response = null;
-			try {
-				response = client.newCall(request).execute();
-			}
-			catch (IOException e) {
-				if (!subscriber.isUnsubscribed()) {
-					subscriber.onError(new ApiCallException(IO_ERROR, e));
-				}
-				return;
-			}
-
-			if (!subscriber.isUnsubscribed()) {
-				if (!response.isSuccessful()) {
-					subscriber.onError(new ApiCallException(ApiErrorCode.API_ERROR, response));
-				}
-				else {
-					subscriber.onNext(null);
-					subscriber.onCompleted();
-				}
-			}
-		});
-	}
-
-	public Observable<JSONArray> getGalleryTokenList(JSONArray pageList) {
-		return Observable.just(pageList)
-				.flatMap(jsonArray -> {
-					JSONObject obj = new JSONObject();
+					Response response = null;
 					try {
-						obj.put("pagelist", pageList);
+						response = client.newCall(request).execute();
 					}
-					catch (JSONException e) {
-						throw OnErrorThrowable.from(new ApiCallException(JSON_ERROR, e));
+					catch (IOException e) {
+						throw OnErrorThrowable.from(e);
 					}
 
-					return callApi("gtoken", obj);
-				})
-				.map(object -> {
-					if (object.has("tokenlist")) {
-						try {
-							return object.getJSONArray("tokenlist");
-						}
-						catch (JSONException e) {
-							throw OnErrorThrowable.from(new ApiCallException(JSON_ERROR, e));
-						}
+					if (!response.isSuccessful()) {
+						throw OnErrorThrowable.from(new ApiCallException(API_ERROR, response));
 					}
 					else {
-						throw OnErrorThrowable.from(new ApiCallException(TOKEN_NOT_FOUND));
+						return (Void)null;
 					}
-				});
-	}
-
-	public Observable<String> getGalleryToken(long id, String photoToken, int page) throws ApiCallException {
-		return Observable.just(photoToken)
-				.flatMap(token -> {
-					JSONArray pagelist = new JSONArray();
-					JSONArray arr = new JSONArray();
-
-					arr.put(id);
-					arr.put(token);
-					arr.put(page);
-					pagelist.put(arr);
-
-					return getGalleryTokenList(pagelist);
-				})
-				.map(jsonArray -> {
-					if (jsonArray.length() == 0 || jsonArray.isNull(0)) {
-						throw OnErrorThrowable.from(new ApiCallException(TOKEN_NOT_FOUND));
-					}
-					else {
-						try {
-							JSONObject tokenObj = jsonArray.getJSONObject(0);
-							if (tokenObj.has("token")) {
-								return tokenObj.getString("token");
-							}
-							else if (tokenObj.has("error")) {
-								String error = tokenObj.getString("error");
-
-								if (error.equals("Invalid page.")) {
-									throw OnErrorThrowable.from(
-											new ApiCallException(ApiErrorCode.TOKEN_OR_PAGE_INVALID));
-								}
-								else {
-									throw OnErrorThrowable.from(
-											new ApiCallException(ApiErrorCode.TOKEN_NOT_FOUND, error));
-								}
-							}
-							else {
-								throw OnErrorThrowable.from(new ApiCallException(ApiErrorCode.TOKEN_NOT_FOUND));
-							}
-						}
-						catch (JSONException e) {
-							throw OnErrorThrowable.from(new ApiCallException(JSON_ERROR, e));
-						}
-					}
-				});
+				}).subscribeOn(Schedulers.io());
 	}
 
 	private static String getGalleryUrl(GalleryEntry galleryEntry, int page) {

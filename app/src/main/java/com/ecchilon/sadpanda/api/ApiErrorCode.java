@@ -13,8 +13,6 @@ public enum ApiErrorCode {
     SHOWKEY_INVALID(4),
     SHOWKEY_NOT_FOUND(5),
     API_ERROR(6),
-    IO_ERROR(7),
-    JSON_ERROR(8),
     PHOTO_NOT_FOUND(9),
     TOKEN_NOT_FOUND(10),
     TOKEN_OR_PAGE_INVALID(11),

@@ -10,6 +10,7 @@ import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.api.DataLoader;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.google.inject.Inject;
+import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
 public class MenuBuilder {
@@ -73,7 +74,7 @@ public class MenuBuilder {
 				return true;
 			case R.id.add_favorites_group:
 				dataLoader.addGalleryToFavorites(itemId, null, entry)
-						.subscribeOn(Schedulers.io())
+						.observeOn(AndroidSchedulers.mainThread())
 						.subscribe(res -> listener.onAddedToFavorites(itemId), throwable -> {
 							Log.e(MenuBuilder.class.getSimpleName(), "Couldn't add gallery entry to favorites",
 									throwable);
@@ -83,7 +84,7 @@ public class MenuBuilder {
 			default:
 				if (itemId == R.id.remove_favorite) {
 					dataLoader.removeGalleryFromFavorites(entry)
-							.subscribeOn(Schedulers.io())
+							.observeOn(AndroidSchedulers.mainThread())
 							.subscribe(res -> listener.onRemovedFromFavorites(), throwable -> {
 								Log.e(MenuBuilder.class.getSimpleName(), "Couldn't remove gallery entry from "
 										+ "favorites",
