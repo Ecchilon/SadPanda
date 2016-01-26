@@ -28,7 +28,7 @@ public class FavoritesPagerAdapter extends FragmentStatePagerAdapter {
 		else {
 			url = String.format(FAVORITES_CAT_URL, i - 1);
 		}
-		return OverviewFragment.newInstance(url, true, null,
+		return OverviewFragment.newInstance(url, i - 1, null,
 				OverviewFragment.SearchType.SIMPLE);
 	}
 

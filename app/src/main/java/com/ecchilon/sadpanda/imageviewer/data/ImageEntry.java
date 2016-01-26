@@ -1,11 +1,8 @@
-package com.ecchilon.sadpanda.imageviewer;
+package com.ecchilon.sadpanda.imageviewer.data;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
 
-/**
- * Created by Alex on 21-9-2014.
- */
 @Data
 @Accessors(chain = true)
 public class ImageEntry {

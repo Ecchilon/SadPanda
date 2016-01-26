@@ -3,10 +3,10 @@ package com.ecchilon.sadpanda.overview;
 import java.io.IOException;
 import java.util.List;
 
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -19,19 +19,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.api.DataLoader;
-import com.ecchilon.sadpanda.favorites.FavoritesTaskFactory;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerActivity;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerFragment;
-import com.ecchilon.sadpanda.menu.FavoritesMenu;
-import com.ecchilon.sadpanda.menu.GalleryMenu;
 import com.ecchilon.sadpanda.search.SearchController;
 import com.ecchilon.sadpanda.search.SearchDialogFragment;
-import com.ecchilon.sadpanda.util.AddFavoriteCallback;
-import com.ecchilon.sadpanda.util.AsyncResultTask;
-import com.ecchilon.sadpanda.util.RemoveFavoriteCallback;
+import com.ecchilon.sadpanda.util.MenuBuilder;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import com.paging.listview.PagingListView;
@@ -40,14 +36,14 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
+import rx.android.schedulers.AndroidSchedulers;
 
 /**
  * A fragment representing a list of Items. Large screen devices (such as tablets) are supported by replacing the
  * ListView with a GridView. interface.
  */
 public class OverviewFragment extends RoboFragment implements AbsListView.OnItemClickListener, SwipeRefreshLayout
-		.OnRefreshListener, PagingListView.Pagingable, GalleryMenu.MenuItemSelectedListener, FavoritesMenu
-		.FavoriteCategorySelectedListener {
+		.OnRefreshListener, PagingListView.Pagingable, MenuBuilder.GalleryMenuClickListener {
 
 	private static final String TAG = "OverviewFragment";
 
@@ -59,18 +55,15 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 	private static final int GALLERY_BATCH_SIZE = 25;
 
-	private static final int ADD_MENU_ID = 12414;
-	private static final int REMOVE_MENU_ID = 14252345;
-	private static final int SHOW_GALLERY_ID = 1234974;
-
 	private static final String STORED_ENTRIES_KEY = "OverviewStoredEntries";
 	private static final String STORED_POSITION_KEY = "OverviewStoredPosition";
 	private static final String STORED_PAGE_KEY = "OverviewStoredPage";
 	private static final String STORED_MORE_ITEMS_KEY = "OverviewStoredHasMoreItems";
 
-	public static final String IS_FAVORITE_LIST_KEY = "favoriteListKey";
-	public static final String SEARCH_TYPE_KEY = "SearchTypeKey";
-	public static final String URL_KEY = "ExhentaiURL";
+	private static final String IS_FAVORITE_LIST_KEY = "favoriteListKey";
+	private static final String SEARCH_TYPE_KEY = "SearchTypeKey";
+	private static final String URL_KEY = "overviewUrlKey";
+	private static final String QUERY_KEY = "overviewQueryKey";
 
 	@InjectView(R.id.overview_list)
 	private PagingListView mListView;
@@ -94,27 +87,26 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	private DataLoader mDataLoader;
 
 	@Inject
-	private FavoritesTaskFactory mTaskFactory;
+	private MenuBuilder menuBuilder;
 
 	private String mQueryUrl;
 	private SearchType mSearchType;
 
 	private int mCurrentPage = 0;
 
-	private GalleryMenu mGalleryMenu;
-	private FavoritesMenu mFavoritesMenu;
+	private Integer favoritesCategory;
 
-	private boolean mIsFavorite;
-
-	public static OverviewFragment newInstance(@NonNull String url, boolean isFavorite, @Nullable String query,
-			SearchType searchType) {
+	public static OverviewFragment newInstance(@NonNull String url, @Nullable Integer favoritesCategory,
+			@Nullable String query, SearchType searchType) {
 		OverviewFragment fragment = new OverviewFragment();
 		if (url != null) {
 			Bundle args = new Bundle();
 			args.putString(URL_KEY, url);
-			args.putBoolean(IS_FAVORITE_LIST_KEY, isFavorite);
+			if(favoritesCategory != null) {
+				args.putInt(IS_FAVORITE_LIST_KEY, favoritesCategory);
+			}
 			if (query != null) {
-				args.putString(SearchActivity.QUERY_KEY, query);
+				args.putString(QUERY_KEY, query);
 			}
 			args.putSerializable(SEARCH_TYPE_KEY, searchType);
 			fragment.setArguments(args);
@@ -128,7 +120,9 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		super.onCreate(savedInstanceState);
 		setHasOptionsMenu(true);
 
-		mIsFavorite = getArguments().getBoolean(IS_FAVORITE_LIST_KEY);
+		if(getArguments().containsKey(IS_FAVORITE_LIST_KEY)) {
+			favoritesCategory = getArguments().getInt(IS_FAVORITE_LIST_KEY);
+		}
 		mQueryUrl = getArguments().getString(URL_KEY);
 		mSearchType = (SearchType) getArguments().getSerializable(SEARCH_TYPE_KEY);
 	}
@@ -223,27 +217,21 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	}
 
 	private void showSearchFragment() {
-		Bundle args = new Bundle();
-		args.putSerializable(SEARCH_TYPE_KEY, mSearchType);
-		args.putString(URL_KEY, mQueryUrl);
-
-		if (getArguments().containsKey(SearchActivity.QUERY_KEY)) {
-			args.putString(SearchActivity.QUERY_KEY, getArguments().getString(SearchActivity.QUERY_KEY));
+		String query = null;
+		if (getArguments().containsKey(QUERY_KEY)) {
+			query = getArguments().getString(QUERY_KEY);
 		}
 
-		SearchDialogFragment fragment = new SearchDialogFragment();
-		fragment.setArguments(args);
+		SearchDialogFragment fragment = SearchDialogFragment.newInstance(query, mQueryUrl, mSearchType);
 		fragment.show(getFragmentManager(), "Search");
 	}
 
 	@Override
 	public void onCreateContextMenu(ContextMenu menu, View v, ContextMenu.ContextMenuInfo menuInfo) {
 		if (v == mListView) {
-			if (!mIsFavorite) {
-				menu.add(0, ADD_MENU_ID, 0, R.string.add_to_favorites);
-			}
-			menu.add(0, REMOVE_MENU_ID, 0, R.string.remove_favorite);
-			menu.add(0, SHOW_GALLERY_ID, 0, R.string.view_entry);
+			AdapterContextMenuInfo info = (AdapterContextMenuInfo) menuInfo;
+			GalleryEntry entry = mAdapter.getItem(info.position);
+			menuBuilder.buildMenu(menu, getActivity(), entry, info.position, favoritesCategory);
 		}
 	}
 
@@ -251,47 +239,10 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	public boolean onContextItemSelected(MenuItem item) {
 		//because #onContextItemSelected also gets triggered on invisible fragments...
 		if (getUserVisibleHint()) {
-			AdapterView.AdapterContextMenuInfo info = (AdapterView.AdapterContextMenuInfo) item.getMenuInfo();
-			GalleryEntry entry = mAdapter.getItem(info.position);
-			switch (item.getItemId()) {
-				case SHOW_GALLERY_ID:
-					mGalleryMenu = new GalleryMenu(entry, getActivity());
-					mGalleryMenu.setOnMenuItemSelectedListener(this);
-					mGalleryMenu.show();
-					return true;
-				case REMOVE_MENU_ID:
-					AsyncResultTask.Callback<GalleryEntry> callback = mIsFavorite ? new RemoveFavoriteOverviewCallback(
-							getActivity()) : new RemoveFavoriteCallback(getActivity());
-
-					mTaskFactory.getRemoveFavoriteTask(entry)
-							.setListener(callback)
-							.execute();
-					return true;
-				case ADD_MENU_ID:
-					mFavoritesMenu = new FavoritesMenu(entry, getActivity());
-					mFavoritesMenu.setFavoritesCategorySelectedListener(this);
-					mFavoritesMenu.show();
-					return true;
-			}
+			GalleryEntry entry = mAdapter.getItem(item.getOrder());
+			menuBuilder.onMenuItemSelected(item, entry, this);
 		}
 		return super.onContextItemSelected(item);
-	}
-
-	@Override
-	public void onMenuItemSelected(String item, boolean uploader) {
-		String url = uploader ? SearchController.getUploaderUrl(item) : SearchController.getDefaultUrl(item);
-
-		Intent searchIntent = new Intent(getActivity(), SearchActivity.class);
-		searchIntent.putExtra(OverviewFragment.URL_KEY, url);
-		searchIntent.putExtra(SearchActivity.QUERY_KEY, item);
-		getActivity().startActivity(searchIntent);
-	}
-
-	@Override
-	public void onFavoriteCategorySelected(int category) {
-		mTaskFactory.getAddFavoriteTask(mFavoritesMenu.getEntry(), category, null)
-				.setListener(new AddFavoriteCallback(getActivity()))
-				.execute();
 	}
 
 	@Override
@@ -320,7 +271,61 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 
 	@Override
 	public void onLoadMoreItems() {
-		new LoadItemsTask().execute();
+		mDataLoader.getGalleryIndex(mQueryUrl, mCurrentPage++)
+				.observeOn(AndroidSchedulers.mainThread())
+				.subscribe(galleryEntries -> {
+					if (mRefreshLayout != null) {
+						mRefreshLayout.setRefreshing(false);
+					}
+
+					//TODO apparently not always batch size?
+					mListView.onFinishLoading(galleryEntries.size() >= GALLERY_BATCH_SIZE,
+							galleryEntries);
+
+					if (mAdapter.getCount() == 0) {
+						showEmpty();
+					}
+				}, throwable -> {
+					Log.e(TAG, "Couldn't retrieve gallery items", throwable);
+					if(mRefreshLayout != null) {
+						mRefreshLayout.setRefreshing(false);
+					}
+					showEmpty();
+				});
+	}
+
+	@Override
+	public void viewByUploader(String uploader) {
+		openSearchWithUrl(uploader, SearchController.getUploaderUrl(uploader));
+	}
+
+	@Override
+	public void viewByTag(String tag) {
+		openSearchWithUrl(tag, SearchController.getDefaultUrl(tag));
+	}
+
+	private void openSearchWithUrl(String query, String url) {
+		getContext().startActivity(SearchActivity.newInstance(getContext(), query, url));
+	}
+
+	@Override
+	public void onAddedToFavorites(int category) {
+		Snackbar.make(mListView, R.string.favorite_added, Snackbar.LENGTH_SHORT).show();
+	}
+
+	@Override
+	public void onRemovedFromFavorites() {
+		Snackbar.make(mListView, R.string.favorite_removed, Snackbar.LENGTH_SHORT).show();
+	}
+
+	@Override
+	public void onFailedToRemoveFavorite() {
+		Snackbar.make(mListView, R.string.favorite_removed_failed, Snackbar.LENGTH_SHORT).show();
+	}
+
+	@Override
+	public void onFailedToAddFavorite(int category) {
+		Snackbar.make(mListView, R.string.favorite_added_failed, Snackbar.LENGTH_SHORT).show();
 	}
 
 	private void showEmpty() {
@@ -359,70 +364,6 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 				((AppCompatActivity) getActivity()).getSupportActionBar()
 						.setSubtitle(mSubTitle + (mCurrentDisplayedPage + 1));
 			}
-		}
-	}
-
-	private class LoadItemsTask extends AsyncResultTask<Void, Void, List<GalleryEntry>> implements AsyncResultTask
-			.Callback<List<GalleryEntry>> {
-
-		public LoadItemsTask() {
-			super(false);
-			setListener(this);
-		}
-
-		@Override
-		protected List<GalleryEntry> call(Void... params) throws Exception {
-			return mDataLoader.getGalleryIndex(mQueryUrl, mCurrentPage++);
-		}
-
-		@Override
-		public void onSuccess(List<GalleryEntry> entryList) {
-			if (mRefreshLayout != null) {
-				mRefreshLayout.setRefreshing(false);
-			}
-
-			mListView.onFinishLoading(entryList.size() >= GALLERY_BATCH_SIZE,
-					entryList);
-
-			if (mAdapter.getCount() == 0) {
-				showEmpty();
-			}
-
-			//TODO show reload for page on failure
-		}
-
-		@Override
-		public void onError(Exception e) {
-			Log.e(TAG, "Failed to load gallery index", e);
-			showEmpty();
-		}
-	}
-
-	private class AddFavoriteOverviewCallback extends AddFavoriteCallback {
-
-		public AddFavoriteOverviewCallback(Context context) {
-			super(context);
-		}
-
-		@Override
-		public void onSuccess(GalleryEntry result) {
-			super.onSuccess(result);
-
-			onRefresh();
-		}
-	}
-
-	private class RemoveFavoriteOverviewCallback extends RemoveFavoriteCallback {
-
-		public RemoveFavoriteOverviewCallback(Context context) {
-			super(context);
-		}
-
-		@Override
-		public void onSuccess(GalleryEntry result) {
-			super.onSuccess(result);
-
-			onRefresh();
 		}
 	}
 }

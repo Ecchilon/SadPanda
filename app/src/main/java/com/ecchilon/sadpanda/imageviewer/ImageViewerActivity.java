@@ -21,10 +21,10 @@ import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.RoboAppCompatActivity;
 import com.ecchilon.sadpanda.api.DataLoader;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
-import com.ecchilon.sadpanda.util.AsyncResultTask;
 import com.google.inject.Inject;
 import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.inject.ContentView;
+import rx.android.schedulers.AndroidSchedulers;
 
 @ContentView(R.layout.activity_image)
 public class ImageViewerActivity extends RoboAppCompatActivity implements ImageViewerFragment.VisibilityToggler,
@@ -39,20 +39,15 @@ public class ImageViewerActivity extends RoboAppCompatActivity implements ImageV
 	private ObjectMapper mObjectMapper;
 
 	@Inject
-	private DataLoader mDataLoader;
+	private DataLoader dataLoader;
 
 	private GalleryEntry mGalleryEntry;
 
 	private boolean mThumbMode = false;
 
 	private Handler uiHandler = new Handler();
-	private Runnable hideTask = new Runnable() {
-		@SuppressLint("NewApi")
-		@Override
-		public void run() {
-			getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LOW_PROFILE);
-		}
-	};
+	private Runnable hideTask = () -> getWindow().getDecorView().setSystemUiVisibility(View
+			.SYSTEM_UI_FLAG_LOW_PROFILE);
 
 	private int mCurrentPage = 0;
 
@@ -79,7 +74,19 @@ public class ImageViewerActivity extends RoboAppCompatActivity implements ImageV
 			Intent intent = getIntent();
 			Uri data = intent.getData();
 			if (data != null) {
-				new GalleryLoadTask().execute(data);
+				dataLoader.getGallery(data.toString())
+						.observeOn(AndroidSchedulers.mainThread())
+						.subscribe(entry -> {
+							mGalleryEntry = entry;
+							loadFragment();
+						}, throwable -> {
+							Toast.makeText(ImageViewerActivity.this, R.string.entry_parsing_failure, Toast
+									.LENGTH_SHORT)
+									.show();
+							Log.e(ImageViewerActivity.class.getSimpleName(), "Failed to parse gallery entry",
+									throwable);
+							finish();
+						});
 				//TODO show loading screen?
 			}
 			else {
@@ -99,7 +106,7 @@ public class ImageViewerActivity extends RoboAppCompatActivity implements ImageV
 			}
 		}
 
-		if(mGalleryEntry != null) {
+		if (mGalleryEntry != null) {
 			getSupportActionBar().setTitle(mGalleryEntry.getTitle());
 		}
 
@@ -222,32 +229,5 @@ public class ImageViewerActivity extends RoboAppCompatActivity implements ImageV
 	@Override
 	public void onPageSelected(int page) {
 		mCurrentPage = page;
-	}
-
-	private class GalleryLoadTask extends AsyncResultTask<Uri, Void, GalleryEntry> implements AsyncResultTask
-			.Callback<GalleryEntry> {
-
-		public GalleryLoadTask() {
-			super(false);
-			setListener(this);
-		}
-
-		@Override
-		protected GalleryEntry call(Uri... params) throws Exception {
-			return mDataLoader.getGallery(params[0].toString());
-		}
-
-		@Override
-		public void onSuccess(GalleryEntry entry) {
-			mGalleryEntry = entry;
-			loadFragment();
-		}
-
-		@Override
-		public void onError(Exception e) {
-			Toast.makeText(ImageViewerActivity.this, R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
-			Log.e("ImageViewerFragment", "Failed to parse gallery entry", e);
-			finish();
-		}
 	}
 }

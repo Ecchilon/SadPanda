@@ -19,7 +19,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.SadPandaApp;
-import com.ecchilon.sadpanda.util.AsyncResultTask;
+import com.ecchilon.sadpanda.imageviewer.data.ImageEntry;
 import com.google.inject.Inject;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Downloader;
@@ -33,7 +33,7 @@ import uk.co.senab.photoview.PhotoView;
 /**
  * Created by Alex on 1/24/14.
  */
-public class ScreenSlidePageFragment extends RoboFragment implements AsyncResultTask.Callback<ImageEntry>, Callback {
+public class ScreenSlidePageFragment extends RoboFragment implements Callback {
 
 	private static final String TAG = ScreenSlidePageFragment.class.getSimpleName();
 
@@ -222,8 +222,7 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 		requestCreator.into(mImageView, this);
 	}
 
-	@Override
-	public void onSuccess(ImageEntry entry) {
+	public void onImageRetrieved(ImageEntry entry) {
 		mImageEntry = entry;
 
 		if (mImageView != null && mImageEntry != null && mImageEntry.getSrc() != null) {
@@ -231,17 +230,16 @@ public class ScreenSlidePageFragment extends RoboFragment implements AsyncResult
 		}
 	}
 
+	public void onImageError(Throwable e) {
+		mFailureText.setVisibility(View.VISIBLE);
+		Log.e("ScreenSlidePageFragment", "Error loading image", e);
+	}
+
 	@Override
 	public void onDetach() {
 		super.onDetach();
 
 		Picasso.with(getActivity()).cancelRequest(mImageView);
-	}
-
-	@Override
-	public void onError(Exception e) {
-		mFailureText.setVisibility(View.VISIBLE);
-		Log.e("ScreenSlidePageFragment", "Error loading image", e);
 	}
 
 	@Override

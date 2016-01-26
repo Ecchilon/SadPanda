@@ -5,43 +5,46 @@ import java.util.List;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
-import com.ecchilon.sadpanda.PageLoadTaskFactory;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.imageviewer.data.GalleryPageCache;
+import com.ecchilon.sadpanda.imageviewer.data.ImageEntry;
+import com.ecchilon.sadpanda.imageviewer.data.ThumbEntry;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
-import com.ecchilon.sadpanda.util.AsyncResultTask;
 import com.google.common.collect.Lists;
-import com.paging.listview.PagingBaseAdapter;
 import com.squareup.picasso.Picasso;
 import com.squareup.picasso.Target;
+import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
 
 public class ThumbAdapter extends BaseAdapter {
 
 	private final List<ImageEntry> items;
-	private final PageLoadTaskFactory mPageTaskFactory;
-	private final GalleryEntry mGalleryEntry;
+	private final GalleryPageCache galleryPageCache;
+	private final GalleryEntry galleryEntry;
+	private Subscription currentSubscription;
 
-	private PageLoadTaskFactory.PageLoadTask mCurrentTask;
 	private int mCurrentPage = 0;
 
-	public ThumbAdapter(PageLoadTaskFactory taskFactory, GalleryEntry entry) {
+	public ThumbAdapter(GalleryPageCache galleryPageCache, GalleryEntry entry) {
+		this.galleryPageCache = galleryPageCache;
 		items = Lists.newArrayListWithCapacity(entry.getFileCount());
-		mPageTaskFactory = taskFactory;
-		mGalleryEntry = entry;
+		this.galleryEntry = entry;
 	}
 
 	@Override
 	public int getCount() {
-		return mGalleryEntry.getFileCount();
+		return galleryEntry.getFileCount();
 	}
 
 	@Override
 	public ImageEntry getItem(int position) {
-		if(position >= items.size()) {
+		if (position >= items.size()) {
 			return null;
 		}
 
@@ -65,7 +68,7 @@ public class ThumbAdapter extends BaseAdapter {
 		}
 
 		ImageEntry item = getItem(position);
-		if(item == null) {
+		if (item == null) {
 			loadNewPage();
 		}
 		else {
@@ -76,25 +79,20 @@ public class ThumbAdapter extends BaseAdapter {
 	}
 
 	private void loadNewPage() {
-		if(mCurrentTask != null) {
-			 return;
+		if (currentSubscription != null) {
+			return;
 		}
 
-		mCurrentTask = mPageTaskFactory.create(mGalleryEntry, mCurrentPage);
-		mCurrentTask.setListener(new AsyncResultTask.Callback<List<ImageEntry>>() {
-			@Override
-			public void onSuccess(List<ImageEntry> result) {
-				mCurrentPage++;
-				mCurrentTask = null;
-				items.addAll(result);
-				notifyDataSetChanged();
-			}
-
-			@Override
-			public void onError(Exception e) {
-
-			}
-		}).execute();
+		currentSubscription = galleryPageCache.getGalleryPage(galleryEntry, mCurrentPage)
+				.observeOn(AndroidSchedulers.mainThread())
+				.subscribe(imageEntries -> {
+					mCurrentPage++;
+					currentSubscription = null;
+					items.addAll(imageEntries);
+					notifyDataSetChanged();
+				}, throwable -> {
+					Log.e(ThumbAdapter.class.getSimpleName(), "Couldn't load image entries", throwable);
+				});
 	}
 
 	private void initThumb(ImageView thumbnail, ThumbEntry item) {

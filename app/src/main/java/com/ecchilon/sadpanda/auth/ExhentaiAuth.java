@@ -1,49 +1,49 @@
 package com.ecchilon.sadpanda.auth;
 
-import static com.ecchilon.sadpanda.util.NetUtils.assertNotMainThread;
+import static com.ecchilon.sadpanda.auth.ExhentaiAuth.ExhentaiError.INCORRECT_AUTH;
+import static com.ecchilon.sadpanda.auth.ExhentaiAuth.ExhentaiError.UNKNOWN;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import android.content.SharedPreferences;
+import android.text.TextUtils;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import lombok.Getter;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.CookieStore;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.protocol.ClientContext;
-import org.apache.http.cookie.Cookie;
-import org.apache.http.impl.cookie.BasicClientCookie;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
-
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import rx.Observable;
+import rx.exceptions.OnErrorThrowable;
+import rx.schedulers.Schedulers;
 
 public class ExhentaiAuth {
-	public static final String DOMAIN = "exhentai.org";
-	public static final String SITE_URL = "http://exhentai.org";
-
-	public enum ExhentaiResult {
+	public enum ExhentaiError {
 		NO_USERNAME("You must enter a username"),
 		USER_NOT_FOUND("You must already have registered for an account before you can log in"),
 		NO_PASSWORD("Your password field was not complete"),
 		INCORRECT_AUTH("Username or password incorrect"),
 		CONNECTION_FAILURE("Failed to connect"),
-		UNKNOWN("Unknown error occurred trying to log you in"),
-		SUCCESS("Logged in successfully");
-
+		UNKNOWN("Unknown error occurred trying to log you in");
 
 		@Getter
-		private String errorMessage;
+		private final String errorMessage;
 
-		private ExhentaiResult(String errorMessage) {
+		ExhentaiError(String errorMessage) {
 			this.errorMessage = errorMessage;
+		}
+	}
+
+	public static class AuthException extends RuntimeException {
+		@Getter
+		private final ExhentaiError error;
+
+		AuthException(ExhentaiError error) {
+			this.error = error;
 		}
 	}
 
@@ -56,23 +56,23 @@ public class ExhentaiAuth {
 	public static final String IPB_PASS_HASH = "ipb_pass_hash";
 	public static final String IPB_SESSION_ID = "ipb_session_id";
 
-	private static final String login = "https://forums.e-hentai.org/index.php?act=Login&CODE=01";
+	private static final String LOGIN = "https://forums.e-hentai.org/index.php?act=Login&CODE=01";
 
-	private final HttpClient mClient;
-	private final HttpContext mHttpContext;
-	private final SharedPreferences mSharedPrefs;
+	private final OkHttpClient client;
+	private final SharedPreferences sharedPreferences;
+
+	private final AtomicReference<String> sessionCookie = new AtomicReference<>();
 
 	@Inject
-	public ExhentaiAuth(HttpClient client, HttpContext mHttpContext, SharedPreferences mSharedPrefs) {
-		this.mClient = client;
-		this.mHttpContext = mHttpContext;
-		this.mSharedPrefs = mSharedPrefs;
+	public ExhentaiAuth(OkHttpClient client, SharedPreferences sharedPreferences) {
+		this.client = client;
+		this.sharedPreferences = sharedPreferences;
 	}
 
 	public void logout() {
-		getCookieStore().clear();
+		sessionCookie.set(null);
 
-		mSharedPrefs.edit()
+		sharedPreferences.edit()
 				.remove(MEMBER_KEY)
 				.remove(HASH_KEY)
 				.remove(SESSION_KEY)
@@ -80,128 +80,120 @@ public class ExhentaiAuth {
 				.apply();
 	}
 
-	public ExhentaiResult login(final String username, String password) {
-		assertNotMainThread();
-		List<NameValuePair> nvps = Lists.newArrayList();
-		nvps.add(new BasicNameValuePair("UserName", username));
-		nvps.add(new BasicNameValuePair("PassWord", password));
-		nvps.add(new BasicNameValuePair("CookieDate", "1"));
-		UrlEncodedFormEntity encodedFormEntity;
+	public Observable<Void> login(final String username, String password) {
+		return Observable.just(username)
+				.map(user -> {
+					RequestBody requestBody = new FormBody.Builder()
+							.addEncoded("UserName", username)
+							.addEncoded("PassWord", password)
+							.add("CookieDate", "1")
+							.build();
 
-		try {
-			encodedFormEntity = new UrlEncodedFormEntity(nvps);
-		}
-		catch (UnsupportedEncodingException e) {
-			return ExhentaiResult.INCORRECT_AUTH;
-		}
+					Request request = new Request.Builder()
+							.url(LOGIN)
+							.post(requestBody)
+							.build();
 
-		HttpPost post = new HttpPost(login);
-		post.setEntity(encodedFormEntity);
+					try {
+						return client.newCall(request).execute();
+					}
+					catch (IOException e) {
+						throw OnErrorThrowable.from(e);
+					}
+				})
+				.subscribeOn(Schedulers.io())
+				.observeOn(Schedulers.computation())
+				.map(response -> {
+					String body = null;
+					try {
+						body = response.body().string();
+					}
+					catch (IOException e) {
+						throw OnErrorThrowable.from(e);
+					}
+					if (body.contains("You are now logged in as: " + username)) {
+						List<String> cookies = Lists.newArrayList();
+						for(String cookie : response.headers("Set-Cookie")) {
+							Collections.addAll(cookies, cookie.split(";"));
+						}
 
-		HttpResponse response;
-		try {
-			response = mClient.execute(post, mHttpContext);
-		}
-		catch (IOException e) {
-			return ExhentaiResult.CONNECTION_FAILURE;
-		}
+						String memberId = null, passHash = null, sessionId = null;
 
-		if (response.getStatusLine().getStatusCode() != HttpStatus.SC_OK) {
-			return ExhentaiResult.CONNECTION_FAILURE;
-		}
+						for (String cookie : cookies) {
+							String[] kvPair = cookie.split("=");
+							if(kvPair.length != 2) {
+								continue;
+							}
+							String key = kvPair[0];
+							String value = kvPair[1];
+							if(IPB_MEMBER_ID.equals(key)) {
+								memberId = value;
+							}
+							else if(IPB_PASS_HASH.equals(key)) {
+								passHash = value;
+							}
+							else if(IPB_SESSION_ID.equals(key)) {
+								sessionId = value;
+							}
+						}
 
-		String body;
-		try {
-			body = EntityUtils.toString(response.getEntity());
-		}
-		catch (IOException e) {
-			return ExhentaiResult.CONNECTION_FAILURE;
-		}
+						if((memberId == null || passHash == null || sessionId == null)) {
+							throw OnErrorThrowable.from(new AuthException(INCORRECT_AUTH));
+						}
 
-		if (body.contains("You are now logged in as: " + username)) {
-			final CookieStore cookieStore = getCookieStore();
+						sharedPreferences.edit()
+								.putString(MEMBER_KEY, memberId)
+								.putString(HASH_KEY, passHash)
+								.putString(SESSION_KEY, sessionId)
+								.putString(USERNAME_KEY, username)
+								.apply();
 
-			//alter cookies to get access to exhentai
-			List<Cookie> cookies = Lists.newArrayList(cookieStore.getCookies());
-			cookieStore.clear();
+						return null;
+					}
+					else {
+						for (ExhentaiError error : ExhentaiError.values()) {
+							if (body.contains(error.getErrorMessage())) {
+								throw OnErrorThrowable.from(new AuthException(error));
+							}
+						}
+					}
 
-			String memberId = "", passHash = "", sessionId = "";
-
-			for (Cookie cookie : cookies) {
-				String name = cookie.getName();
-				if(IPB_MEMBER_ID.equals(name)) {
-					memberId = cookie.getValue();
-				}
-				else if(IPB_PASS_HASH.equals(name)) {
-					passHash = cookie.getValue();
-				}
-				else if(IPB_SESSION_ID.equals(name)) {
-					sessionId = cookie.getValue();
-				}
-
-				cookieStore.addCookie(new PandaHttpCookie(cookie));
-			}
-
-			if(memberId == null || passHash == null || sessionId == null) {
-				cookieStore.clear();
-				return ExhentaiResult.INCORRECT_AUTH;
-			}
-
-			mSharedPrefs.edit()
-					.putString(MEMBER_KEY, memberId)
-					.putString(HASH_KEY, passHash)
-					.putString(SESSION_KEY, sessionId)
-					.putString(USERNAME_KEY, username)
-					.apply();
-
-			return ExhentaiResult.SUCCESS;
-		}
-		else {
-			for (ExhentaiResult error : ExhentaiResult.values()) {
-				if (body.contains(error.getErrorMessage())) {
-					return error;
-				}
-			}
-		}
-
-		return ExhentaiResult.UNKNOWN;
+					throw OnErrorThrowable.from(new AuthException(UNKNOWN));
+				});
 	}
 
 	public boolean isLoggedIn() {
-		for (Cookie cookie : getCookieStore().getCookies()) {
-			if (cookie.getDomain().contains(DOMAIN)) {
-				return true;
-			}
-		}
-
-		return false;
+		return sharedPreferences.contains(SESSION_KEY);
 	}
 
 	public String getUserName() {
-		return mSharedPrefs.getString(USERNAME_KEY, null);
+		return sharedPreferences.getString(USERNAME_KEY, null);
 	}
 
-	private CookieStore getCookieStore() {
-		return (CookieStore) mHttpContext.getAttribute(ClientContext.COOKIE_STORE);
-	}
+	public String getSessionCookie() {
+		synchronized (sessionCookie) {
+			String cookie = sessionCookie.get();
+			if(cookie == null) {
+				cookie = createCookie();
+				sessionCookie.set(cookie);
+			}
 
-	private interface CookieFunction {
-		void run(Cookie cookie);
-	}
-
-	public static class PandaHttpCookie extends BasicClientCookie {
-
-		public PandaHttpCookie(String name, String value) {
-			super(name, value);
-
-			setPath("/");
-			setDomain(DOMAIN);
-			setAttribute("url", SITE_URL);
+			return cookie;
 		}
+	}
 
-		public PandaHttpCookie(Cookie cookie) {
-			this(cookie.getName(), cookie.getValue());
-		}
+	private String createCookie() {
+		String[] cookies = new String[] {
+				getCookieKeyValue(IPB_MEMBER_ID, MEMBER_KEY),
+				getCookieKeyValue(IPB_PASS_HASH, HASH_KEY),
+				getCookieKeyValue(IPB_SESSION_ID, SESSION_KEY)
+		};
+
+		return TextUtils.join(";", cookies);
+	}
+
+	private String getCookieKeyValue(String key, String preferenceKey) {
+		return key + "=" + sharedPreferences.getString(preferenceKey, "");
 	}
 }
 
