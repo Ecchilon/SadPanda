@@ -28,3 +28,5 @@ proguard/
 build/
 *.iml
 
+# Debug files
+captures/
