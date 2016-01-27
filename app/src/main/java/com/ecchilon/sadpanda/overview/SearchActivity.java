@@ -22,8 +22,8 @@ import roboguice.inject.ContentView;
 @ContentView(R.layout.activity_overview)
 public class SearchActivity extends RoboAppCompatActivity implements SwipeBackActivityBase, OnSearchSubmittedListener {
 
-	private static final String QUERY_KEY = "ExhentaiQuery";
-	private static final String URL_KEY = "ExhentaiQuery";
+	private static final String QUERY_KEY = "ExhentaiQueryKey";
+	private static final String URL_KEY = "ExhentaiUrlKey";
 
 	private SwipeBackActivityHelper mHelper;
 
