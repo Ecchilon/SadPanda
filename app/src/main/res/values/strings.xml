@@ -15,7 +15,7 @@
 	<string name="image_description">Image for this page</string>
 	<string name="refresh_menu">Refresh</string>
 	<string name="query_error">Error searching for this query</string>
-	<string name="entries">entries</string>
+	<string name="entries">%1$s entries - %2$s</string>
 	<string name="show_advanced">Show Advanced Search</string>
 	<string name="doujinshi">Doujinshi</string>
 	<string name="manga">Manga</string>
