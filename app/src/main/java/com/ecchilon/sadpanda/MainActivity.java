@@ -51,6 +51,7 @@ public class MainActivity extends RoboAppCompatActivity implements LoginFragment
 	@InjectView(R.id.drawer_layout)
 	private DrawerLayout mDrawerLayout;
 
+	@Nullable
 	@InjectView(R.id.tabs)
 	private TabLayout tabs;
 
@@ -149,12 +150,7 @@ public class MainActivity extends RoboAppCompatActivity implements LoginFragment
 			mNavItemId = menuItem.getItemId();
 
 			mDrawerLayout.closeDrawer(GravityCompat.START);
-			mDrawerActionHandler.postDelayed(new Runnable() {
-				@Override
-				public void run() {
-					navigate(mNavItemId);
-				}
-			}, DRAWER_CLOSE_DELAY_MS);
+			mDrawerActionHandler.postDelayed(() -> navigate(mNavItemId), DRAWER_CLOSE_DELAY_MS);
 		}
 		return true;
 	}
@@ -193,6 +189,11 @@ public class MainActivity extends RoboAppCompatActivity implements LoginFragment
 	public void onSuccess() {
 		closeLoginFragment();
 		showMainContent();
+	}
+
+	@Override
+	public void onDismiss() {
+		finish();
 	}
 
 	private void showMainContent() {

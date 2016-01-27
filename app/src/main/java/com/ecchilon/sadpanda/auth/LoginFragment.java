@@ -23,7 +23,6 @@ import com.trello.rxlifecycle.components.support.RxDialogFragment;
 import roboguice.RoboGuice;
 import rx.Observable;
 import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
 
 public class LoginFragment extends RxDialogFragment {
 
@@ -31,12 +30,14 @@ public class LoginFragment extends RxDialogFragment {
 
 	public interface LoginListener {
 		void onSuccess();
+
+		void onDismiss();
 	}
 
 	@Inject
 	private ExhentaiAuth auth;
 
-	private LoginListener mAuthListener;
+	private LoginListener authListener;
 
 	private View mLoginFormView;
 	private View mProgressView;
@@ -51,7 +52,7 @@ public class LoginFragment extends RxDialogFragment {
 		RoboGuice.getInjector(activity).injectMembersWithoutViews(this);
 
 		try {
-			mAuthListener = (LoginListener) activity;
+			authListener = (LoginListener) activity;
 		}
 		catch (ClassCastException e) {
 			throw new IllegalArgumentException(
@@ -63,7 +64,7 @@ public class LoginFragment extends RxDialogFragment {
 	public void onDetach() {
 		super.onDetach();
 
-		mAuthListener = null;
+		authListener = null;
 	}
 
 	@NonNull
@@ -108,6 +109,11 @@ public class LoginFragment extends RxDialogFragment {
 		return alertDialog;
 	}
 
+	@Override
+	public void onCancel(DialogInterface dialog) {
+		authListener.onDismiss();
+	}
+
 	private void performLogin() {
 		showProgress(true);
 
@@ -115,7 +121,7 @@ public class LoginFragment extends RxDialogFragment {
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(exhentaiResult -> {
 					dismiss();
-					mAuthListener.onSuccess();
+					authListener.onSuccess();
 				}, throwable -> {
 					showProgress(false);
 					Log.e(LoginFragment.class.getSimpleName(), "Couldn't log in", throwable);
