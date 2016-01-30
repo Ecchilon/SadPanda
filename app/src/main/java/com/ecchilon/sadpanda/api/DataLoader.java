@@ -44,6 +44,7 @@ import rx.schedulers.Schedulers;
 
 public class DataLoader {
 	public static final int PHOTO_PER_PAGE = 40;
+	public static final int GALLERIES_PER_PAGE = 25;
 	private static final String FAVORITES_URL_EX = "http://exhentai.org/gallerypopups.php?gid=%d&t=%s&act=addfav";
 	private static final String API_URL_EX = "http://exhentai.org/api.php";
 	private static final String GALLERY_URL_EX = "http://exhentai.org/g/%d/%s";

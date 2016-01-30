@@ -51,6 +51,7 @@ dependencies {
     compile 'com.trello:rxlifecycle:0.4.0'
     compile 'com.trello:rxlifecycle-components:0.4.0'
     compile 'com.jakewharton.rxbinding:rxbinding:0.3.0'
+    compile 'com.jakewharton.rxbinding:rxbinding-recyclerview-v7:0.3.0'
 
     compile 'com.squareup.okhttp3:okhttp:3.0.1'
     compile 'org.apache.commons:commons-lang3:3.1'

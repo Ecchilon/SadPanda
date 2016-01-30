@@ -1,8 +1,7 @@
 package com.ecchilon.sadpanda.overview;
 
-import java.io.IOException;
+import java.util.List;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
@@ -17,40 +16,41 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AbsListView;
-import android.widget.AdapterView;
 import android.widget.AdapterView.AdapterContextMenuInfo;
-import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.RxRoboFragment;
 import com.ecchilon.sadpanda.api.DataLoader;
-import com.ecchilon.sadpanda.imageviewer.ImageViewerActivity;
-import com.ecchilon.sadpanda.imageviewer.ImageViewerFragment;
+import com.ecchilon.sadpanda.api.GalleryLoader;
 import com.ecchilon.sadpanda.search.SearchController;
 import com.ecchilon.sadpanda.search.SearchDialogFragment;
 import com.ecchilon.sadpanda.util.MenuBuilder;
 import com.google.inject.Inject;
+import com.jakewharton.rxbinding.support.v7.widget.RecyclerViewScrollEvent;
+import com.jakewharton.rxbinding.support.v7.widget.RxRecyclerView;
+import com.trello.rxlifecycle.RxLifecycle;
 import lombok.NonNull;
 import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
+import rx.Observable;
+import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
+import rx.subscriptions.Subscriptions;
 
 /**
  * A fragment representing a list of Items. Large screen devices (such as tablets) are supported by replacing the
  * ListView with a GridView. interface.
  */
-public class OverviewFragment extends RoboFragment implements AbsListView.OnItemClickListener, SwipeRefreshLayout
-		.OnRefreshListener, MenuBuilder.GalleryMenuClickListener {
+public class OverviewFragment extends RxRoboFragment implements MenuBuilder.GalleryMenuClickListener {
 
 	private static final String TAG = "OverviewFragment";
+	private Subscription pageSubscription = Subscriptions.empty();
 
 	public enum SearchType {
 		NONE,
 		SIMPLE,
 		ADVANCED
 	}
-
-	private static final int GALLERY_BATCH_SIZE = 25;
 
 	private static final String IS_FAVORITE_LIST_KEY = "favoriteListKey";
 	private static final String SEARCH_TYPE_KEY = "SearchTypeKey";
@@ -66,27 +66,29 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	@InjectView(R.id.no_content)
 	private View noContentView;
 
-	@Nullable
 	@InjectView(R.id.swipe_container)
 	private SwipeRefreshLayout refreshLayout;
 
 	private final OverviewAdapter adapter = new OverviewAdapter();
 
 	@Inject
-	private ObjectMapper mObjectMapper;
-
-	@Inject
-	private DataLoader dataLoader;
+	private GalleryLoader galleryLoader;
 
 	@Inject
 	private MenuBuilder menuBuilder;
 
+	private LinearLayoutManager layoutManager;
 	private String mQueryUrl;
 	private SearchType mSearchType;
 
-	private int currentPage = 0;
-
 	private Integer favoritesCategory;
+
+	private final Observable<List<GalleryEntry>> pageObservable = Observable.defer(
+			() -> RxRecyclerView.scrollEvents(entryListView)
+					.compose(bindToLifecycle())
+					.filter(this::canLoadPage)
+					.scan(0, (page, event) -> page + 1)
+					.flatMap(page -> galleryLoader.loadPage(mQueryUrl, page)));
 
 	public static OverviewFragment newInstance(@NonNull String url, @Nullable Integer favoritesCategory,
 			@Nullable String query, SearchType searchType) {
@@ -94,7 +96,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		if (url != null) {
 			Bundle args = new Bundle();
 			args.putString(URL_KEY, url);
-			if(favoritesCategory != null) {
+			if (favoritesCategory != null) {
 				args.putInt(IS_FAVORITE_LIST_KEY, favoritesCategory);
 			}
 			if (query != null) {
@@ -112,7 +114,7 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		super.onCreate(savedInstanceState);
 		setHasOptionsMenu(true);
 
-		if(getArguments().containsKey(IS_FAVORITE_LIST_KEY)) {
+		if (getArguments().containsKey(IS_FAVORITE_LIST_KEY)) {
 			favoritesCategory = getArguments().getInt(IS_FAVORITE_LIST_KEY);
 		}
 		mQueryUrl = getArguments().getString(URL_KEY);
@@ -139,24 +141,45 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 	public void onViewCreated(View view, Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 
-		onLoadMoreItems();
-
 		entryListView.setAdapter(adapter);
-		entryListView.setLayoutManager(new LinearLayoutManager(getContext()));
-		showLoading();
+		layoutManager = new LinearLayoutManager(getContext());
+		entryListView.setLayoutManager(layoutManager);
+		loadNewData();
 
-		if (refreshLayout != null) {
-			refreshLayout.setOnRefreshListener(this);
-		}
+		refreshLayout.setOnRefreshListener(this::refresh);
 
 		registerForContextMenu(entryListView);
+	}
+
+	private void loadNewData() {
+		pageSubscription.unsubscribe();
+
+		pageSubscription = pageObservable.observeOn(AndroidSchedulers.mainThread())
+				.subscribe(galleryEntries -> {
+					if (refreshLayout != null) {
+						refreshLayout.setRefreshing(false);
+					}
+
+					showLoading();
+					adapter.addItems(galleryEntries);
+
+					if (adapter.getItemCount() == 0) {
+						showEmpty();
+					}
+				}, throwable -> {
+					Log.e(TAG, "Couldn't retrieve gallery items", throwable);
+					if (refreshLayout != null) {
+						refreshLayout.setRefreshing(false);
+					}
+					showEmpty();
+				});
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 			case R.id.refresh_menu:
-				onRefresh();
+				refresh();
 				return true;
 			case R.id.action_search:
 				showSearchFragment();
@@ -164,6 +187,13 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		}
 
 		return super.onOptionsItemSelected(item);
+	}
+
+	private void refresh() {
+		adapter.clear();
+		loadNewData();
+
+		showLoading();
 	}
 
 	private void showSearchFragment() {
@@ -195,49 +225,12 @@ public class OverviewFragment extends RoboFragment implements AbsListView.OnItem
 		return super.onContextItemSelected(item);
 	}
 
-	@Override
-	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-		Intent viewerIntent = new Intent(getActivity(), ImageViewerActivity.class);
-		try {
-			viewerIntent.putExtra(ImageViewerFragment.GALLERY_ITEM_KEY, mObjectMapper.writeValueAsString(
-					adapter.getItem(position)));
-		}
-		catch (IOException e) {
-			Toast.makeText(getActivity(), R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
-			Log.e("BookmarkFragment", "Failed to write gallery entry", e);
-			return;
-		}
-		startActivity(viewerIntent);
-	}
-
-	@Override
-	public void onRefresh() {
-		adapter.clear();
-		currentPage = 0;
-
-		showLoading();
-	}
-
-	public void onLoadMoreItems() {
-		dataLoader.getGalleryIndex(mQueryUrl, currentPage++)
-				.observeOn(AndroidSchedulers.mainThread())
-				.subscribe(galleryEntries -> {
-					if (refreshLayout != null) {
-						refreshLayout.setRefreshing(false);
-					}
-
-					adapter.addItems(galleryEntries);
-
-					if (adapter.getItemCount() == 0) {
-						showEmpty();
-					}
-				}, throwable -> {
-					Log.e(TAG, "Couldn't retrieve gallery items", throwable);
-					if(refreshLayout != null) {
-						refreshLayout.setRefreshing(false);
-					}
-					showEmpty();
-				});
+	private boolean canLoadPage(RecyclerViewScrollEvent event) {
+		int visibleItemCount = layoutManager.getChildCount();
+		int totalItemCount = layoutManager.getItemCount();
+		int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
+		return !galleryLoader.isLoading() && galleryLoader.isHasMoreItems()
+				&& visibleItemCount + firstVisibleItem >= totalItemCount;
 	}
 
 	@Override
