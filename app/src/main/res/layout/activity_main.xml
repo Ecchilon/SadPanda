@@ -10,15 +10,16 @@
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"
 			android:orientation="vertical"
-			>
+	>
 
 		<android.support.v7.widget.Toolbar
 				android:id="@+id/toolbar"
 				android:theme="@style/AppBarTheme"
 				android:layout_width="match_parent"
 				android:layout_height="?attr/actionBarSize"
-				app:popupTheme="@style/Theme.AppCompat.Light.NoActionBar"
-				/>
+				app:popupTheme="@style/AppBarTheme"
+				app:subtitleTextColor="@color/white"
+		/>
 
 		<android.support.design.widget.TabLayout
 				android:id="@+id/tabs"
@@ -29,13 +30,13 @@
 				app:tabMode="scrollable"
 				app:tabIndicatorColor="@color/white"
 				app:tabIndicatorHeight="@dimen/indicator_height"
-				/>
+		/>
 
 		<FrameLayout
 				android:id="@+id/container"
 				android:layout_width="match_parent"
 				android:layout_height="match_parent"
-				/>
+		/>
 
 	</LinearLayout>
 
@@ -47,5 +48,5 @@
 			app:headerLayout="@layout/drawer_header"
 			android:fitsSystemWindows="true"
 			app:menu="@menu/drawer"
-			/>
+	/>
 </android.support.v4.widget.DrawerLayout>

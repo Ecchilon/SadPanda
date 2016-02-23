@@ -1,6 +1,6 @@
 package com.ecchilon.sadpanda.overview;
 
-import java.util.List;
+import static com.ecchilon.sadpanda.data.OverviewPresenter.State.*;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -19,38 +19,35 @@ import android.view.ViewGroup;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.RxRoboFragment;
-import com.ecchilon.sadpanda.api.DataLoader;
-import com.ecchilon.sadpanda.api.GalleryLoader;
+import com.ecchilon.sadpanda.data.OverviewPresenter;
+import com.ecchilon.sadpanda.data.OverviewView;
 import com.ecchilon.sadpanda.search.SearchController;
 import com.ecchilon.sadpanda.search.SearchDialogFragment;
 import com.ecchilon.sadpanda.util.MenuBuilder;
 import com.google.inject.Inject;
 import com.jakewharton.rxbinding.support.v7.widget.RecyclerViewScrollEvent;
 import com.jakewharton.rxbinding.support.v7.widget.RxRecyclerView;
-import com.trello.rxlifecycle.RxLifecycle;
 import lombok.NonNull;
-import org.codehaus.jackson.map.ObjectMapper;
-import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
 import rx.Observable;
 import rx.Subscription;
 import rx.android.schedulers.AndroidSchedulers;
+import rx.subjects.PublishSubject;
 import rx.subscriptions.Subscriptions;
 
-/**
- * A fragment representing a list of Items. Large screen devices (such as tablets) are supported by replacing the
- * ListView with a GridView. interface.
- */
-public class OverviewFragment extends RxRoboFragment implements MenuBuilder.GalleryMenuClickListener {
+public class OverviewFragment extends RxRoboFragment implements MenuBuilder.GalleryMenuClickListener, OverviewView {
 
-	private static final String TAG = "OverviewFragment";
-	private Subscription pageSubscription = Subscriptions.empty();
+	public interface PageContainer {
+		void onPage(int page);
+	}
 
 	public enum SearchType {
 		NONE,
 		SIMPLE,
 		ADVANCED
 	}
+
+	private static final String TAG = "OverviewFragment";
 
 	private static final String IS_FAVORITE_LIST_KEY = "favoriteListKey";
 	private static final String SEARCH_TYPE_KEY = "SearchTypeKey";
@@ -60,7 +57,7 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 	@InjectView(R.id.overview_list)
 	private RecyclerView entryListView;
 
-	@InjectView(android.R.id.empty)
+	@InjectView(R.id.empty)
 	private View loadingView;
 
 	@InjectView(R.id.no_content)
@@ -72,23 +69,17 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 	private final OverviewAdapter adapter = new OverviewAdapter();
 
 	@Inject
-	private GalleryLoader galleryLoader;
+	private OverviewPresenter overviewPresenter;
 
 	@Inject
 	private MenuBuilder menuBuilder;
 
 	private LinearLayoutManager layoutManager;
-	private String mQueryUrl;
-	private SearchType mSearchType;
 
 	private Integer favoritesCategory;
+	private SearchType searchType;
 
-	private final Observable<List<GalleryEntry>> pageObservable = Observable.defer(
-			() -> RxRecyclerView.scrollEvents(entryListView)
-					.compose(bindToLifecycle())
-					.filter(this::canLoadPage)
-					.scan(0, (page, event) -> page + 1)
-					.flatMap(page -> galleryLoader.loadPage(mQueryUrl, page)));
+	private Subscription pageSubscription = Subscriptions.empty();
 
 	public static OverviewFragment newInstance(@NonNull String url, @Nullable Integer favoritesCategory,
 			@Nullable String query, SearchType searchType) {
@@ -117,8 +108,16 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 		if (getArguments().containsKey(IS_FAVORITE_LIST_KEY)) {
 			favoritesCategory = getArguments().getInt(IS_FAVORITE_LIST_KEY);
 		}
-		mQueryUrl = getArguments().getString(URL_KEY);
-		mSearchType = (SearchType) getArguments().getSerializable(SEARCH_TYPE_KEY);
+
+		overviewPresenter.attach(this);
+		overviewPresenter.setQuery(getArguments().getString(URL_KEY));
+		searchType = (SearchType) getArguments().getSerializable(SEARCH_TYPE_KEY);
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		overviewPresenter.detach(this);
 	}
 
 	@Override
@@ -126,7 +125,7 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 		super.onCreateOptionsMenu(menu, inflater);
 
 		inflater.inflate(R.menu.overview, menu);
-		if (mSearchType == SearchType.NONE) {
+		if (searchType == SearchType.NONE) {
 			menu.removeItem(R.id.action_search);
 		}
 	}
@@ -149,29 +148,34 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 		refreshLayout.setOnRefreshListener(this::refresh);
 
 		registerForContextMenu(entryListView);
+
+		overviewPresenter.getOverviewStateEvents()
+				.observeOn(AndroidSchedulers.mainThread())
+				.subscribe(this::showState);
+
+		RxRecyclerView.scrollEvents(entryListView)
+				.map(event -> layoutManager.findFirstVisibleItemPosition())
+				.map(overviewPresenter::getPageForPosition)
+				.distinctUntilChanged()
+				.subscribe(((PageContainer) getActivity())::onPage);
 	}
 
 	private void loadNewData() {
 		pageSubscription.unsubscribe();
 
-		pageSubscription = pageObservable.observeOn(AndroidSchedulers.mainThread())
+		pageSubscription = overviewPresenter.getGalleryPages()
+				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(galleryEntries -> {
 					if (refreshLayout != null) {
 						refreshLayout.setRefreshing(false);
 					}
 
-					showLoading();
 					adapter.addItems(galleryEntries);
-
-					if (adapter.getItemCount() == 0) {
-						showEmpty();
-					}
 				}, throwable -> {
 					Log.e(TAG, "Couldn't retrieve gallery items", throwable);
 					if (refreshLayout != null) {
 						refreshLayout.setRefreshing(false);
 					}
-					showEmpty();
 				});
 	}
 
@@ -191,9 +195,8 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 
 	private void refresh() {
 		adapter.clear();
+		adapter.setState(null);
 		loadNewData();
-
-		showLoading();
 	}
 
 	private void showSearchFragment() {
@@ -202,7 +205,8 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 			query = getArguments().getString(QUERY_KEY);
 		}
 
-		SearchDialogFragment fragment = SearchDialogFragment.newInstance(query, mQueryUrl, mSearchType);
+		SearchDialogFragment fragment =
+				SearchDialogFragment.newInstance(query, overviewPresenter.getQuery(), searchType);
 		fragment.show(getFragmentManager(), "Search");
 	}
 
@@ -229,8 +233,50 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 		int visibleItemCount = layoutManager.getChildCount();
 		int totalItemCount = layoutManager.getItemCount();
 		int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
-		return !galleryLoader.isLoading() && galleryLoader.isHasMoreItems()
-				&& visibleItemCount + firstVisibleItem >= totalItemCount;
+		return visibleItemCount + firstVisibleItem >= totalItemCount;
+	}
+
+	private void showState(OverviewPresenter.State state) {
+		if (refreshLayout.isRefreshing() && state == LOADING) {
+			return;
+		}
+
+		if (adapter.getItemCount() == 0) {
+			loadingView.setVisibility(state == LOADING ? View.VISIBLE : View.GONE);
+		}
+
+		if (entryListView.getVisibility() == View.GONE && state == LOADED) {
+			entryListView.setVisibility(View.VISIBLE);
+		}
+
+		if (state != EMPTY && entryListView.getVisibility() == View.VISIBLE) {
+			adapter.setState(state);
+		}
+
+		showEmpty(state == EMPTY);
+	}
+
+	private void showEmpty(boolean isEmpty) {
+		entryListView.setVisibility(isEmpty ? View.GONE : View.VISIBLE);
+		noContentView.setVisibility(isEmpty ? View.VISIBLE : View.GONE);
+	}
+
+	@Override
+	public Observable<Void> getPageEvents() {
+		return RxRecyclerView.scrollEvents(entryListView).filter(this::canLoadPage).map(event -> null);
+	}
+
+	@Override
+	public Observable<?> handleError(Observable<Void> errorObservable) {
+		return errorObservable.observeOn(AndroidSchedulers.mainThread())
+				.flatMap(aVoid -> {
+					PublishSubject<Void> retrySubject = PublishSubject.create();
+
+					Snackbar.make(entryListView, R.string.page_load_failed, Snackbar.LENGTH_INDEFINITE)
+							.setAction(R.string.retry, view -> retrySubject.onNext(null))
+							.show();
+					return retrySubject;
+				});
 	}
 
 	@Override
@@ -266,15 +312,4 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 	public void onFailedToAddFavorite(int category) {
 		Snackbar.make(entryListView, R.string.favorite_added_failed, Snackbar.LENGTH_SHORT).show();
 	}
-
-	private void showEmpty() {
-		//TODO empty
-		loadingView.setVisibility(View.GONE);
-	}
-
-	private void showLoading() {
-		//TODO loading
-		noContentView.setVisibility(View.GONE);
-	}
-
 }
