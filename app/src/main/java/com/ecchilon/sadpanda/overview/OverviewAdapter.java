@@ -1,6 +1,8 @@
 package com.ecchilon.sadpanda.overview;
 
-import static com.ecchilon.sadpanda.data.OverviewPresenter.State.*;
+import static com.ecchilon.sadpanda.data.OverviewPresenter.State.END;
+import static com.ecchilon.sadpanda.data.OverviewPresenter.State.LOADED;
+import static com.ecchilon.sadpanda.data.OverviewPresenter.State.LOADING;
 
 import java.util.Collection;
 import java.util.List;

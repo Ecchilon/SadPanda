@@ -1,18 +1,16 @@
 package com.ecchilon.sadpanda.imageviewer;
 
-import java.io.IOException;
-
-import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.NavUtils;
 import android.support.v4.app.TaskStackBuilder;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,28 +18,15 @@ import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.RoboAppCompatActivity;
 import com.ecchilon.sadpanda.api.DataLoader;
-import com.ecchilon.sadpanda.overview.GalleryEntry;
-import com.google.inject.Inject;
-import org.codehaus.jackson.map.ObjectMapper;
 import roboguice.inject.ContentView;
-import rx.android.schedulers.AndroidSchedulers;
 
 @ContentView(R.layout.activity_image)
 public class ImageViewerActivity extends RoboAppCompatActivity implements ImageViewerFragment.VisibilityToggler,
 		ThumbFragment.OnThumbSelectedListener, ImageViewerFragment.PageSelectedListener {
 
-	private static final String GALLERY_ENTRY_KEY = "galleryEntryKey";
 	private static final String ACTIVITY_STATE_KEY = "activityStateKey";
 
 	private boolean lowProfile = false;
-
-	@Inject
-	private ObjectMapper mObjectMapper;
-
-	@Inject
-	private DataLoader dataLoader;
-
-	private GalleryEntry mGalleryEntry;
 
 	private boolean mThumbMode = false;
 
@@ -51,6 +36,18 @@ public class ImageViewerActivity extends RoboAppCompatActivity implements ImageV
 
 	private int mCurrentPage = 0;
 
+	private static final String GALLERY_ID_KEY = "galleryIdKey";
+	private static final String GALLERY_TOKEN_KEY = "galleryTokenKey";
+
+	private DataLoader.GalleryIdToken galleryIdToken;
+
+	public static Intent newInstance(Context context, long galleryId, @NonNull String galleryToken) {
+		Intent intent = new Intent(context, ImageViewerActivity.class);
+		intent.putExtra(GALLERY_ID_KEY, galleryId);
+		intent.putExtra(GALLERY_TOKEN_KEY, galleryToken);
+		return intent;
+	}
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -59,55 +56,31 @@ public class ImageViewerActivity extends RoboAppCompatActivity implements ImageV
 		setSupportActionBar(toolbar);
 
 		if (savedInstanceState != null) {
-			try {
-				mGalleryEntry =
-						mObjectMapper.readValue(savedInstanceState.getString(GALLERY_ENTRY_KEY), GalleryEntry.class);
-			}
-			catch (IOException e) {
-				Log.w("ImageViewerFragment", "Failed to parse gallery entry during state restoration", e);
-			}
-
 			mThumbMode = savedInstanceState.getBoolean(ACTIVITY_STATE_KEY);
 		}
 
-		if (mGalleryEntry == null) {
+		if (!(getIntent().hasExtra(GALLERY_ID_KEY) && getIntent().hasExtra(GALLERY_TOKEN_KEY))) {
 			Intent intent = getIntent();
 			Uri data = intent.getData();
 			if (data != null) {
-				dataLoader.getGallery(data.toString())
-						.observeOn(AndroidSchedulers.mainThread())
-						.subscribe(entry -> {
-							mGalleryEntry = entry;
-							loadFragment();
-						}, throwable -> {
-							Toast.makeText(ImageViewerActivity.this, R.string.entry_parsing_failure, Toast
-									.LENGTH_SHORT)
-									.show();
-							Log.e(ImageViewerActivity.class.getSimpleName(), "Failed to parse gallery entry",
-									throwable);
-							finish();
-						});
-				//TODO show loading screen?
+				galleryIdToken = DataLoader.getGalleryId(data.toString());
+				if (galleryIdToken != null) {
+					loadFragment();
+				}
+				else {
+					Toast.makeText(this, R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
+					finish();
+				}
 			}
 			else {
-				String entryString = getIntent().getStringExtra(ImageViewerFragment.GALLERY_ITEM_KEY);
-
-				try {
-					mGalleryEntry = mObjectMapper.readValue(entryString, GalleryEntry.class);
-				}
-				catch (IOException e) {
-					Toast.makeText(this, R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
-					Log.e("ImageViewerFragment", "Failed to parse gallery entry", e);
-					finish();
-					return;
-				}
-
-				loadFragment();
+				Toast.makeText(this, R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
+				finish();
 			}
 		}
-
-		if (mGalleryEntry != null) {
-			getSupportActionBar().setTitle(mGalleryEntry.getTitle());
+		else {
+			galleryIdToken = new DataLoader.GalleryIdToken(getIntent().getLongExtra(GALLERY_ID_KEY, 0),
+					getIntent().getStringExtra(GALLERY_TOKEN_KEY));
+			loadFragment();
 		}
 
 		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -123,10 +96,9 @@ public class ImageViewerActivity extends RoboAppCompatActivity implements ImageV
 			return;
 		}
 
-		String entryString = getIntent().getStringExtra(ImageViewerFragment.GALLERY_ITEM_KEY);
 		Fragment newFragment = mThumbMode ?
-				ThumbFragment.newInstance(entryString, mCurrentPage) :
-				ImageViewerFragment.newInstance(entryString, mCurrentPage);
+				ThumbFragment.newInstance(galleryIdToken, mCurrentPage) :
+				ImageViewerFragment.newInstance(galleryIdToken, mCurrentPage);
 
 		getSupportFragmentManager()
 				.beginTransaction()
@@ -139,14 +111,6 @@ public class ImageViewerActivity extends RoboAppCompatActivity implements ImageV
 		super.onSaveInstanceState(outState);
 
 		outState.putBoolean(ACTIVITY_STATE_KEY, mThumbMode);
-
-		if (mGalleryEntry != null) {
-			try {
-				outState.putString(GALLERY_ENTRY_KEY, mObjectMapper.writeValueAsString(mGalleryEntry));
-			}
-			catch (IOException ignored) {
-			}
-		}
 	}
 
 	@Override

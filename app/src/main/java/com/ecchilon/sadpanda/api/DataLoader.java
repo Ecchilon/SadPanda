@@ -25,6 +25,7 @@ import com.ecchilon.sadpanda.overview.Category;
 import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.google.common.collect.Lists;
 import com.google.inject.Inject;
+import lombok.Value;
 import okhttp3.CacheControl;
 import okhttp3.FormBody;
 import okhttp3.MediaType;
@@ -43,6 +44,12 @@ import rx.schedulers.Schedulers;
 
 
 public class DataLoader {
+	@Value
+	public static class GalleryIdToken {
+		private final long galleryId;
+		private final String galleryToken;
+	}
+
 	public static final int PHOTO_PER_PAGE = 40;
 	public static final int GALLERIES_PER_PAGE = 25;
 	private static final String FAVORITES_URL_EX = "http://exhentai.org/gallerypopups.php?gid=%d&t=%s&act=addfav";
@@ -80,23 +87,17 @@ public class DataLoader {
 							.post(RequestBody.create(JSON, json.toString()))
 							.build();
 
-					String responseStr;
-					try {
-						responseStr = client.newCall(request).execute().body().string();
-					}
-					catch (IOException e) {
-							throw OnErrorThrowable.from(e);
-					}
+					String body = getBody(request);
 
 					JSONObject result;
 					try {
-						result = new JSONObject(responseStr);
+						result = new JSONObject(body);
 
 						if (result.has("error")) {
 							String error = result.getString("error");
 
 							if (error.equals("Key mismatch")) {
-									throw OnErrorThrowable.from(new ApiCallException(SHOWKEY_INVALID));
+								throw OnErrorThrowable.from(new ApiCallException(SHOWKEY_INVALID));
 							}
 							else {
 								throw OnErrorThrowable.from(new ApiCallException(API_ERROR));
@@ -274,15 +275,8 @@ public class DataLoader {
 			if (!useCache) {
 				builder.cacheControl(CacheControl.FORCE_NETWORK);
 			}
-			String content;
-			try {
-				content = client.newCall(builder.build()).execute().body().string();
-			}
-			catch (IOException e) {
-				throw OnErrorThrowable.from(e);
-			}
 
-			return content;
+			return getBody(builder.build());
 		}).subscribeOn(Schedulers.io());
 	}
 
@@ -399,17 +393,27 @@ public class DataLoader {
 	public Observable<GalleryEntry> getGallery(String url) {
 		return Observable.just(url)
 				.flatMap(galleryUrl -> {
-					Matcher matcher = pGalleryUrl.matcher(url);
 
-					if (matcher.find()) {
-						long id = Long.parseLong(matcher.group(2));
-						String token = matcher.group(3);
-						return getGallery(id, token);
+					GalleryIdToken galleryIdToken = getGalleryId(galleryUrl);
+					if (galleryIdToken != null) {
+						return getGallery(galleryIdToken.getGalleryId(), galleryIdToken.getGalleryToken());
 					}
 					else {
 						throw OnErrorThrowable.from(new ApiCallException(TOKEN_OR_PAGE_INVALID));
 					}
 				});
+	}
+
+	public static GalleryIdToken getGalleryId(String url) {
+		Matcher matcher = pGalleryUrl.matcher(url);
+		if (matcher.find()) {
+			long id = Long.parseLong(matcher.group(2));
+			String token = matcher.group(3);
+			return new GalleryIdToken(id, token);
+		}
+		else {
+			return null;
+		}
 	}
 
 	public Observable<GalleryEntry> getGallery(long id, String token) {
@@ -431,9 +435,9 @@ public class DataLoader {
 
 	public Observable<Void> addGalleryToFavorites(int favoritesCategory, String favNote,
 			GalleryEntry entry) {
-			if (favNote == null) {
-				favNote = "";
-			}
+		if (favNote == null) {
+			favNote = "";
+		}
 
 		return updateFavorite(Integer.toString(favoritesCategory), favNote, entry);
 	}
@@ -462,12 +466,17 @@ public class DataLoader {
 					catch (IOException e) {
 						throw OnErrorThrowable.from(e);
 					}
+					finally {
+						if (response != null) {
+							response.body().close();
+						}
+					}
 
 					if (!response.isSuccessful()) {
 						throw OnErrorThrowable.from(new ApiCallException(API_ERROR));
 					}
 					else {
-						return (Void)null;
+						return (Void) null;
 					}
 				}).subscribeOn(Schedulers.io());
 	}
@@ -482,5 +491,21 @@ public class DataLoader {
 
 	private static String getImagePageUrl(ImageEntry entry) {
 		return String.format(PHOTO_URL_EX, entry.getToken(), entry.getGalleryId(), entry.getPage());
+	}
+
+	private String getBody(Request request) {
+		Response response = null;
+		try {
+			response = client.newCall(request).execute();
+			return response.body().string();
+		}
+		catch (IOException e) {
+			throw OnErrorThrowable.from(e);
+		}
+		finally {
+			if (response != null) {
+				response.body().close();
+			}
+		}
 	}
 }

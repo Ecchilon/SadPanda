@@ -1,11 +1,7 @@
 package com.ecchilon.sadpanda.imageviewer;
 
-import java.io.IOException;
-
 import android.app.Activity;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,16 +10,17 @@ import android.widget.AdapterView;
 import android.widget.GridView;
 import android.widget.Toast;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.RxRoboFragment;
+import com.ecchilon.sadpanda.api.DataLoader;
+import com.ecchilon.sadpanda.api.GalleryClient;
 import com.ecchilon.sadpanda.imageviewer.data.GalleryPageCache;
-import com.ecchilon.sadpanda.overview.GalleryEntry;
 import com.google.inject.Inject;
 import com.squareup.picasso.Picasso;
 import lombok.Getter;
-import org.codehaus.jackson.map.ObjectMapper;
-import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
+import rx.android.schedulers.AndroidSchedulers;
 
-public class ThumbFragment extends RoboFragment implements AbsListView.OnItemClickListener {
+public class ThumbFragment extends RxRoboFragment implements AbsListView.OnItemClickListener {
 
 	public interface OnThumbSelectedListener {
 		void onThumbSelected(int position);
@@ -31,16 +28,18 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 
 	private static final String GRID_STATE_KEY = "gridStateKey";
 
-	public static final String GALLERY_ENTRY_KEY = "galleryEntryKey";
+	private static final String GALLERY_ID_KEY = "galleryIdKey";
+	private static final String GALLERY_TOKEN_KEY = "galleryTokenKey";
 
 	public static final String CURRENT_PAGE_KEY = "currentPageKey";
 
 	@Getter
 	private static final Object picassoTag = new Object();
 
-	public static ThumbFragment newInstance(@NonNull String entryString, int currentPage) {
+	public static ThumbFragment newInstance(DataLoader.GalleryIdToken galleryIdToken, int currentPage) {
 		Bundle args = new Bundle();
-		args.putString(GALLERY_ENTRY_KEY, entryString);
+		args.putLong(GALLERY_ID_KEY, galleryIdToken.getGalleryId());
+		args.putString(GALLERY_TOKEN_KEY, galleryIdToken.getGalleryToken());
 		args.putInt(CURRENT_PAGE_KEY, currentPage);
 
 		ThumbFragment fragment = new ThumbFragment();
@@ -52,13 +51,12 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 	private GridView mThumbOverview;
 
 	@Inject
-	private GalleryPageCache galleryPageCache;
+	private GalleryClient galleryClient;
 
 	@Inject
-	private ObjectMapper mObjectMapper;
+	private GalleryPageCache galleryPageCache;
 
 	private int mCurrentPage;
-	private GalleryEntry mGalleryEntry;
 	private OnThumbSelectedListener mListener;
 
 	@Override
@@ -87,15 +85,6 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 		super.onCreate(savedInstanceState);
 
 		mCurrentPage = getArguments().getInt(CURRENT_PAGE_KEY);
-
-		try {
-			mGalleryEntry = mObjectMapper.readValue(getArguments().getString(GALLERY_ENTRY_KEY), GalleryEntry.class);
-		}
-		catch (IOException e) {
-			Toast.makeText(getActivity(), R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
-			Log.e("ImageViewerFragment", "Failed to parse gallery entry", e);
-			getActivity().finish();
-		}
 	}
 
 	@Override
@@ -107,9 +96,19 @@ public class ThumbFragment extends RoboFragment implements AbsListView.OnItemCli
 	public void onViewCreated(View view, Bundle savedInstanceState) {
 		super.onViewCreated(view, savedInstanceState);
 
-		ThumbAdapter adapter = new ThumbAdapter(galleryPageCache, mGalleryEntry);
-		mThumbOverview.setAdapter(adapter);
 		mThumbOverview.setOnItemClickListener(this);
+
+		galleryClient.getEntry(getArguments().getLong(GALLERY_ID_KEY), getArguments().getString(GALLERY_TOKEN_KEY))
+				.compose(bindToLifecycle())
+				.observeOn(AndroidSchedulers.mainThread())
+				.subscribe(entry -> {
+					ThumbAdapter adapter = new ThumbAdapter(galleryPageCache, entry);
+					mThumbOverview.setAdapter(adapter);
+				}, throwable -> {
+					Toast.makeText(getContext(), R.string.entry_parsing_failure, Toast.LENGTH_SHORT).show();
+					getActivity().finish();
+				});
+
 		if (savedInstanceState != null) {
 			mThumbOverview.onRestoreInstanceState(savedInstanceState.getParcelable(GRID_STATE_KEY));
 		}
