@@ -4,6 +4,8 @@ import static com.ecchilon.sadpanda.data.OverviewPresenter.State.END;
 import static com.ecchilon.sadpanda.data.OverviewPresenter.State.LOADED;
 import static com.ecchilon.sadpanda.data.OverviewPresenter.State.LOADING;
 
+import javax.inject.Inject;
+
 import java.util.Collection;
 import java.util.List;
 
@@ -13,6 +15,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.data.OverviewPresenter;
+import com.ecchilon.sadpanda.util.MenuBuilder;
 import com.google.common.collect.Lists;
 
 public class OverviewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -25,11 +28,18 @@ public class OverviewAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
 	private OverviewPresenter.State state;
 
+	private final MenuBuilder menuBuilder;
+
+	@Inject
+	OverviewAdapter(MenuBuilder menuBuilder) {
+		this.menuBuilder = menuBuilder;
+	}
+
 	@Override
 	public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
 		LayoutInflater layoutInflater = LayoutInflater.from(parent.getContext());
 		if (viewType == GALLERY_VIEW_TYPE) {
-			return new EntryViewHolder(layoutInflater.inflate(R.layout.gallery_entry, parent, false));
+			return new EntryViewHolder(layoutInflater.inflate(R.layout.gallery_entry, parent, false), menuBuilder);
 		}
 		else if (viewType == LOADING_VIEW_TYPE) {
 			return new EmptyViewHolder(layoutInflater.inflate(R.layout.loading_footer, parent, false));

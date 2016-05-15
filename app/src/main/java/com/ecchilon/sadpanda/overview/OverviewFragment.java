@@ -66,7 +66,8 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 	@InjectView(R.id.swipe_container)
 	private SwipeRefreshLayout refreshLayout;
 
-	private final OverviewAdapter adapter = new OverviewAdapter();
+	@Inject
+	private OverviewAdapter adapter;
 
 	@Inject
 	private OverviewPresenter overviewPresenter;
@@ -147,7 +148,7 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 
 		refreshLayout.setOnRefreshListener(this::refresh);
 
-		registerForContextMenu(entryListView);
+		//registerForContextMenu(entryListView);
 
 		overviewPresenter.getOverviewStateEvents()
 				.observeOn(AndroidSchedulers.mainThread())

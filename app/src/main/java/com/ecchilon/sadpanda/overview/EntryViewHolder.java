@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import com.ecchilon.sadpanda.R;
 import com.ecchilon.sadpanda.imageviewer.ImageViewerActivity;
+import com.ecchilon.sadpanda.util.MenuBuilder;
 import com.google.common.base.Joiner;
 import com.jakewharton.rxbinding.view.RxView;
 import com.squareup.picasso.Picasso;
@@ -27,8 +28,12 @@ public class EntryViewHolder extends RecyclerView.ViewHolder {
 	private final ImageView category;
 	private final ForegroundColorSpan subColorSpan;
 
-	public EntryViewHolder(View itemView) {
+	private final MenuBuilder builder;
+
+	public EntryViewHolder(View itemView, MenuBuilder builder) {
 		super(itemView);
+
+		this.builder = builder;
 
 		thumbView = (ImageView) itemView.findViewById(R.id.thumb);
 		titleView = (TextView) itemView.findViewById(R.id.title);
@@ -45,6 +50,9 @@ public class EntryViewHolder extends RecyclerView.ViewHolder {
 			Context context = itemView.getContext();
 			context.startActivity(ImageViewerActivity.newInstance(context, entry.getGalleryId(), entry.getToken()));
 		});
+		itemView.setOnCreateContextMenuListener(
+				(contextMenu, view, contextMenuInfo) -> builder.buildMenu(contextMenu, view.getContext(),
+						entry, getAdapterPosition(), null));
 
 		titleView.setText(entry.getTitle());
 		category.setColorFilter(itemView.getResources().getColor(entry.getCategory().getColor()), MULTIPLY);
