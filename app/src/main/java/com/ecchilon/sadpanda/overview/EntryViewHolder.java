@@ -68,7 +68,7 @@ public class EntryViewHolder extends RecyclerView.ViewHolder {
 	private void buildSubtitle(GalleryEntry entry) {
 		SpannableStringBuilder builder = new SpannableStringBuilder();
 		String fileCountText = String.format(itemView.getResources().getString(R.string.entries), entry.getFileCount(),
-				Joiner.on(',').join(entry.getTags()));
+				Joiner.on(", ").join(entry.getTags()));
 		builder.append(fileCountText);
 		builder.setSpan(subColorSpan, fileCountText.length(), builder.length(), Spannable
 				.SPAN_INCLUSIVE_INCLUSIVE);

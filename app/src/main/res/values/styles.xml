@@ -49,6 +49,7 @@
 
 	<style name="subtitle" parent="body">
 		<item name="android:textSize">12sp</item>
+		<item name="android:textColor">@color/dark_gray</item>
 	</style>
 
 	<style name="PandaBar" parent="SmoothProgressBar">
