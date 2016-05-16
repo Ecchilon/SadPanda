@@ -148,8 +148,6 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 
 		refreshLayout.setOnRefreshListener(this::refresh);
 
-		//registerForContextMenu(entryListView);
-
 		overviewPresenter.getOverviewStateEvents()
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(this::showState);

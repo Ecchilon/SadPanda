@@ -11,6 +11,7 @@ import static com.ecchilon.sadpanda.util.FuncUtils.not;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -28,6 +29,7 @@ import com.google.inject.Inject;
 import lombok.Value;
 import okhttp3.CacheControl;
 import okhttp3.FormBody;
+import okhttp3.Headers;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -44,6 +46,7 @@ import rx.schedulers.Schedulers;
 
 
 public class DataLoader {
+
 	@Value
 	public static class GalleryIdToken {
 		private final long galleryId;
@@ -57,6 +60,9 @@ public class DataLoader {
 	private static final String GALLERY_URL_EX = "http://exhentai.org/g/%d/%s";
 	private static final String PHOTO_URL_EX = "http://exhentai.org/s/%s/%d-%d";
 	private static final String GALLERY_PATTERN = "http://(g\\.e-|ex)hentai\\.org/g/(\\d+)/(\\w+)/";
+	private static final String SET_COOKIE = "Set-Cookie";
+	private static final String COOKIE = "Cookie";
+
 
 	private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
@@ -71,6 +77,8 @@ public class DataLoader {
 	private final OkHttpClient client;
 	private final ExhentaiAuth auth;
 
+	private String sHeader;
+
 	@Inject
 	DataLoader(OkHttpClient client, ExhentaiAuth auth) {
 		this.client = client;
@@ -82,7 +90,7 @@ public class DataLoader {
 				.map(jsonObject -> {
 					Request request = new Request.Builder()
 							.addHeader("Accept", "application/json")
-							.addHeader("Cookie", auth.getSessionCookie())
+							.addHeader(COOKIE, auth.getSessionCookie())
 							.url(API_URL_EX)
 							.post(RequestBody.create(JSON, json.toString()))
 							.build();
@@ -100,7 +108,7 @@ public class DataLoader {
 								throw OnErrorThrowable.from(new ApiCallException(SHOWKEY_INVALID));
 							}
 							else {
-								throw OnErrorThrowable.from(new ApiCallException(API_ERROR));
+								throw OnErrorThrowable.from(new ApiCallException(API_ERROR, error));
 							}
 						}
 
@@ -269,7 +277,7 @@ public class DataLoader {
 	private Observable<String> getContent(String url, boolean useCache) {
 		return Observable.just(url).map(requestUrl -> {
 			Request.Builder builder = new Request.Builder()
-					.addHeader("Cookie", auth.getSessionCookie())
+					.addHeader(COOKIE, getCookieHeader())
 					.url(requestUrl)
 					.get();
 			if (!useCache) {
@@ -293,7 +301,7 @@ public class DataLoader {
 				.observeOn(Schedulers.computation())
 				.flatMap(content -> {
 					Matcher matcher = pGalleryHref.matcher(content);
-					JSONArray gidlist = new JSONArray();
+					List<JSONArray> gidList = Lists.newArrayListWithCapacity(GALLERIES_PER_PAGE);
 
 					while (matcher.find()) {
 						long id = Long.parseLong(matcher.group(2));
@@ -302,12 +310,14 @@ public class DataLoader {
 
 						arr.put(id);
 						arr.put(token);
-
-						gidlist.put(arr);
+						gidList.add(arr);
 					}
-
-					return getGalleryList(gidlist);
-				});
+					return Observable.from(gidList);
+				})
+				.buffer(GALLERIES_PER_PAGE)
+				.map(JSONArray::new)
+				.flatMap(this::getGalleryList)
+				.defaultIfEmpty(Collections.emptyList());
 	}
 
 	public String getGalleryIndexUrl(String base, int page) {
@@ -455,7 +465,7 @@ public class DataLoader {
 
 					Request request = new Request.Builder()
 							.url(String.format(FAVORITES_URL_EX, entry.getGalleryId(), entry.getToken()))
-							.addHeader("Cookie", auth.getSessionCookie())
+							.addHeader(COOKIE, getCookieHeader())
 							.post(body)
 							.build();
 
@@ -497,6 +507,12 @@ public class DataLoader {
 		Response response = null;
 		try {
 			response = client.newCall(request).execute();
+			if (this.sHeader == null) {
+				this.sHeader = getSHeader(response.headers());
+				if (sHeader != null) {
+					return reloadWithSHeader(request);
+				}
+			}
 			return response.body().string();
 		}
 		catch (IOException e) {
@@ -507,5 +523,32 @@ public class DataLoader {
 				response.body().close();
 			}
 		}
+	}
+
+	private String getSHeader(Headers headers) {
+		for (String header : headers.values(SET_COOKIE)) {
+			if (header.startsWith("s=")) {
+				return header.split(";")[0].substring(2);
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Somehow Exhentai sends a cookie-header 's' along with its favorites. Because
+	 */
+	private String reloadWithSHeader(Request request) {
+		Request.Builder builder = request.newBuilder();
+		builder.header(COOKIE, getCookieHeader());
+		return getBody(builder.build());
+	}
+
+	private String getCookieHeader() {
+		String cookie = auth.getSessionCookie();
+		if (sHeader != null) {
+			cookie += ";s=" + sHeader;
+		}
+		return cookie;
 	}
 }
