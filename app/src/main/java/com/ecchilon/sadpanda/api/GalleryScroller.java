@@ -25,7 +25,7 @@ public class GalleryScroller {
 		isLoading = true;
 		return galleryClient.getGalleryIndex(base, page).doOnNext(galleryEntries -> {
 			isLoading = false;
-			if (galleryEntries.size() < DataLoader.GALLERIES_PER_PAGE) {
+			if (galleryEntries.isEmpty()) {
 				hasMoreItems = false;
 			}
 		});
