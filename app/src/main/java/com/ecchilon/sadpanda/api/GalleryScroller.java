@@ -28,6 +28,6 @@ public class GalleryScroller {
 			if (galleryEntries.isEmpty()) {
 				hasMoreItems = false;
 			}
-		});
+		}).doOnError(throwable -> isLoading = false);
 	}
 }

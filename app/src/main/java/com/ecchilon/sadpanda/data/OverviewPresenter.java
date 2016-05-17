@@ -17,6 +17,7 @@ public class OverviewPresenter extends Presenter<OverviewView> {
 	public enum State {
 		LOADED,
 		EMPTY,
+		ERROR,
 		LOADING,
 		END
 	}
@@ -42,6 +43,7 @@ public class OverviewPresenter extends Presenter<OverviewView> {
 				.flatMap(page -> {
 							stateSubject.onNext(State.LOADING);
 							return galleryScroller.loadPage(query, page)
+									.doOnError(throwable -> stateSubject.onNext(State.ERROR))
 									.retryWhen(this::onError)
 									.doOnNext(galleryEntries -> updateState(page, galleryEntries));
 						}
