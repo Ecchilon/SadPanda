@@ -6,15 +6,16 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.Refreshable;
 import com.ecchilon.sadpanda.TabContainer;
-import org.apache.commons.lang.IllegalClassException;
+import com.ecchilon.sadpanda.overview.OverviewFragment;
 import roboguice.fragment.RoboFragment;
 import roboguice.inject.InjectView;
 
-public class FavoritesFragment extends RoboFragment {
+public class FavoritesFragment extends RoboFragment implements Refreshable {
 
 	@InjectView(R.id.pager)
-	private ViewPager mFavoritesPager;
+	private ViewPager favoritesPager;
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -29,13 +30,19 @@ public class FavoritesFragment extends RoboFragment {
 				new FavoritesPagerAdapter(getChildFragmentManager(), getString(R.string.favorites),
 						getString(R.string.favorites_all));
 
-		mFavoritesPager.setAdapter(adapter);
+		favoritesPager.setAdapter(adapter);
 
 		try {
-			((TabContainer) getActivity()).getTabs().setupWithViewPager(mFavoritesPager);
+			((TabContainer) getActivity()).getTabs().setupWithViewPager(favoritesPager);
 		}
 		catch (ClassCastException e) {
 			throw new IllegalArgumentException("parent activity should implement " + TabContainer.class.getSimpleName());
 		}
+	}
+
+	@Override
+	public void refresh() {
+		((OverviewFragment) getChildFragmentManager().findFragmentByTag(
+				"android:switcher:" + R.id.pager + ":" + favoritesPager.getCurrentItem())).refresh();
 	}
 }
