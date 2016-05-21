@@ -5,28 +5,29 @@
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
 		tools:context="com.ecchilon.sadpanda.overview.OverviewFragment"
-		>
+>
 
 	<android.support.v4.widget.SwipeRefreshLayout
 			android:id="@+id/swipe_container"
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"
-			>
+	>
 
-		<com.paging.listview.PagingListView
+		<android.support.v7.widget.RecyclerView
 				android:id="@+id/overview_list"
 				android:layout_width="match_parent"
 				android:layout_height="match_parent"
-				/>
+				android:visibility="gone"
+		/>
 	</android.support.v4.widget.SwipeRefreshLayout>
 
 	<ProgressBar
-			android:id="@android:id/empty"
+			android:id="@+id/empty"
 			android:layout_width="@dimen/progress_bar_size"
 			android:layout_height="@dimen/progress_bar_size"
 			android:layout_gravity="center"
 			android:visibility="gone"
-			/>
+	/>
 
 	<TextView
 			android:id="@+id/no_content"
@@ -35,5 +36,5 @@
 			android:layout_height="wrap_content"
 			android:layout_gravity="center"
 			android:visibility="gone"
-			/>
+	/>
 </FrameLayout>

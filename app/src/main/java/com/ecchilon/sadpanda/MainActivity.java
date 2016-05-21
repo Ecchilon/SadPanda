@@ -18,6 +18,7 @@ import com.ecchilon.sadpanda.auth.ExhentaiAuth;
 import com.ecchilon.sadpanda.auth.LoginFragment;
 import com.ecchilon.sadpanda.favorites.FavoritesFragment;
 import com.ecchilon.sadpanda.overview.OverviewFragment;
+import com.ecchilon.sadpanda.overview.OverviewFragment.PageContainer;
 import com.ecchilon.sadpanda.overview.SearchActivity;
 import com.ecchilon.sadpanda.preferences.PandaPreferenceActivity;
 import com.ecchilon.sadpanda.search.OnSearchSubmittedListener;
@@ -26,7 +27,7 @@ import com.google.inject.Inject;
 import roboguice.inject.InjectView;
 
 public class MainActivity extends RoboAppCompatActivity implements LoginFragment.LoginListener,
-		OnSearchSubmittedListener, NavigationView.OnNavigationItemSelectedListener, TabContainer {
+		OnSearchSubmittedListener, NavigationView.OnNavigationItemSelectedListener, TabContainer, PageContainer {
 
 	public static final String DEFAULT_QUERY_KEY = "defaultQueryKey";
 	private static final String DEFAULT_QUERY_URL = "http://exhentai.org";
@@ -220,12 +221,19 @@ public class MainActivity extends RoboAppCompatActivity implements LoginFragment
 	public void onSearchSubmitted(String url, String query) {
 		startActivity(SearchActivity.newInstance(this, query, url));
 	}
+
 	@Override
 	public TabLayout getTabs() {
-		if(tabs.getVisibility() == View.GONE) {
+		if (tabs.getVisibility() == View.GONE) {
 			throw new IllegalStateException("Tabs are not available right now!");
 		}
 
 		return tabs;
+	}
+
+	@Override
+	@SuppressWarnings("ConstantConditions")
+	public void onPage(int page) {
+		getSupportActionBar().setSubtitle(String.format(getString(R.string.current_page), page));
 	}
 }

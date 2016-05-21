@@ -20,7 +20,8 @@ import me.imid.swipebacklayout.lib.app.SwipeBackActivityHelper;
 import roboguice.inject.ContentView;
 
 @ContentView(R.layout.activity_overview)
-public class SearchActivity extends RoboAppCompatActivity implements SwipeBackActivityBase, OnSearchSubmittedListener {
+public class SearchActivity extends RoboAppCompatActivity implements SwipeBackActivityBase,
+		OnSearchSubmittedListener, OverviewFragment.PageContainer {
 
 	private static final String QUERY_KEY = "ExhentaiQueryKey";
 	private static final String URL_KEY = "ExhentaiUrlKey";
@@ -117,5 +118,10 @@ public class SearchActivity extends RoboAppCompatActivity implements SwipeBackAc
 				.beginTransaction()
 				.replace(R.id.container, fragment)
 				.commit();
+	}
+
+	@Override
+	public void onPage(int page) {
+		getSupportActionBar().setSubtitle(String.format(getString(R.string.current_page), page));
 	}
 }
