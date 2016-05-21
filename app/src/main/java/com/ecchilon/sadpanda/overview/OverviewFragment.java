@@ -18,6 +18,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import com.ecchilon.sadpanda.R;
+import com.ecchilon.sadpanda.Refreshable;
 import com.ecchilon.sadpanda.RxRoboFragment;
 import com.ecchilon.sadpanda.data.OverviewPresenter;
 import com.ecchilon.sadpanda.data.OverviewView;
@@ -35,7 +36,8 @@ import rx.android.schedulers.AndroidSchedulers;
 import rx.subjects.PublishSubject;
 import rx.subscriptions.Subscriptions;
 
-public class OverviewFragment extends RxRoboFragment implements MenuBuilder.GalleryMenuClickListener, OverviewView {
+public class OverviewFragment extends RxRoboFragment implements MenuBuilder.GalleryMenuClickListener, OverviewView,
+		Refreshable {
 
 	public interface PageContainer {
 		void onPage(int page);
@@ -152,11 +154,13 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 				.observeOn(AndroidSchedulers.mainThread())
 				.subscribe(this::showState);
 
-		RxRecyclerView.scrollEvents(entryListView)
-				.map(event -> layoutManager.findFirstVisibleItemPosition())
-				.map(overviewPresenter::getPageForPosition)
-				.distinctUntilChanged()
-				.subscribe(((PageContainer) getActivity())::onPage);
+		if (favoritesCategory == null) {
+			RxRecyclerView.scrollEvents(entryListView)
+					.map(event -> layoutManager.findFirstVisibleItemPosition())
+					.map(overviewPresenter::getPageForPosition)
+					.distinctUntilChanged()
+					.subscribe(((PageContainer) getActivity())::onPage);
+		}
 	}
 
 	private void loadNewData() {
@@ -192,9 +196,10 @@ public class OverviewFragment extends RxRoboFragment implements MenuBuilder.Gall
 		return super.onOptionsItemSelected(item);
 	}
 
-	private void refresh() {
+	@Override
+	public void refresh() {
 		adapter.clear();
-		adapter.setState(null);
+		showState(EMPTY);
 		loadNewData();
 	}
 

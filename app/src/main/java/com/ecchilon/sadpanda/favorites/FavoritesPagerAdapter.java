@@ -2,10 +2,11 @@ package com.ecchilon.sadpanda.favorites;
 
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import com.ecchilon.sadpanda.overview.OverviewFragment;
 
-public class FavoritesPagerAdapter extends FragmentStatePagerAdapter {
+public class FavoritesPagerAdapter extends FragmentPagerAdapter {
 	public static final int FAVORITES_TAB_COUNT = 11;
 	private static final String BASE_FAVORITES_URL = "http://exhentai.org/favorites.php";
 	private static final String FAVORITES_CAT_URL = BASE_FAVORITES_URL + "?favcat=%d";
