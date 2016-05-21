@@ -3,13 +3,6 @@
 	android:layout_height="match_parent"
 	>
 
-	<com.viewpagerindicator.CirclePageIndicator
-		android:id="@+id/indicator"
-		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:layout_gravity="top"
-		/>
-
 	<com.ecchilon.sadpanda.imageviewer.GestureViewPager
 		android:id="@+id/pager"
 		android:layout_width="match_parent"
