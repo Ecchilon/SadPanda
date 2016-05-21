@@ -34,8 +34,6 @@ android {
 }
 
 dependencies {
-    compile project(':viewpager-indicator')
-
     provided 'org.projectlombok:lombok:1.12.6'
     provided 'org.roboguice:roboblender:3.0'
 
