@@ -1,5 +1,6 @@
 package com.ecchilon.sadpanda.imageviewer;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -155,25 +156,20 @@ public class ImageViewerActivity extends RoboAppCompatActivity implements ImageV
 		switch (item.getItemId()) {
 			case android.R.id.home:
 				Intent upIntent = NavUtils.getParentActivityIntent(this);
-				if (NavUtils.shouldUpRecreateTask(this, upIntent)) {
-					// We're not part of the app's task, so we create a new one
+				if (NavUtils.shouldUpRecreateTask(this, upIntent) || isTaskRoot()) {
 					TaskStackBuilder.create(this)
 							.addNextIntentWithParentStack(upIntent)
 							.startActivities();
 				}
 				else {
-					// We're part of the app's task, so we navigate back (create up intent destroys existing parent
-					// intent forcing a reload of the page)
 					onBackPressed();
 				}
-				break;
+				return true;
 			case R.id.show_overview:
 				toggleGridview();
 				return true;
-			default:
-				return super.onOptionsItemSelected(item);
 		}
-		return true;
+		return super.onOptionsItemSelected(item);
 	}
 
 	private void toggleGridview() {
