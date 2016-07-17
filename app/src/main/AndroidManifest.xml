@@ -3,7 +3,6 @@
           xmlns:tools="http://schemas.android.com/tools"
           package="com.ecchilon.sadpanda">
 
-	<!-- To access Google+ APIs: -->
 	<uses-permission android:name="android.permission.INTERNET"/>
 
 	<application
