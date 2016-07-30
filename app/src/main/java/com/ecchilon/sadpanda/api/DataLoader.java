@@ -55,11 +55,11 @@ public class DataLoader {
 
 	public static final int PHOTO_PER_PAGE = 40;
 	public static final int GALLERIES_PER_PAGE = 25;
-	private static final String FAVORITES_URL_EX = "http://exhentai.org/gallerypopups.php?gid=%d&t=%s&act=addfav";
-	private static final String API_URL_EX = "http://exhentai.org/api.php";
-	private static final String GALLERY_URL_EX = "http://exhentai.org/g/%d/%s";
-	private static final String PHOTO_URL_EX = "http://exhentai.org/s/%s/%d-%d";
-	private static final String GALLERY_PATTERN = "http://(g\\.e-|ex)hentai\\.org/g/(\\d+)/(\\w+)/";
+	private static final String FAVORITES_URL_EX = "https://exhentai.org/gallerypopups.php?gid=%d&t=%s&act=addfav";
+	private static final String API_URL_EX = "https://exhentai.org/api.php";
+	private static final String GALLERY_URL_EX = "https://exhentai.org/g/%d/%s";
+	private static final String PHOTO_URL_EX = "https://exhentai.org/s/%s/%d-%d";
+	private static final String GALLERY_PATTERN = "https?://(g\\.e-|ex)hentai\\.org/g/(\\d+)/(\\w+)/";
 	private static final String SET_COOKIE = "Set-Cookie";
 	private static final String COOKIE = "Cookie";
 

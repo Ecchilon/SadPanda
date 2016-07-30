@@ -49,6 +49,21 @@
 						android:scheme="http"
 						android:pathPattern="/g/.*/.*"
 						/>
+				<data
+						android:host="exhentai.org"
+						android:scheme="https"
+						android:pathPattern="/g/.*/.*"
+						/>
+				<data
+						android:host="g.e-hentai.org"
+						android:scheme="http"
+						android:pathPattern="/g/.*/.*"
+						/>
+				<data
+						android:host="g.e-hentai.org"
+						android:scheme="https"
+						android:pathPattern="/g/.*/.*"
+						/>
 			</intent-filter>
 			<meta-data
 					android:name="android.support.PARENT_ACTIVITY"
