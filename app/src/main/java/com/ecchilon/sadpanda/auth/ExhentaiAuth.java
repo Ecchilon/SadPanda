@@ -111,7 +111,7 @@ public class ExhentaiAuth {
 					catch (IOException e) {
 						throw OnErrorThrowable.from(e);
 					}
-					if (body.contains("You are now logged in as: " + username)) {
+					if (body.contains("You are now logged in as: ")) {
 						List<String> cookies = Lists.newArrayList();
 						for(String cookie : response.headers("Set-Cookie")) {
 							Collections.addAll(cookies, cookie.split(";"));
