@@ -136,14 +136,14 @@ public class ImageViewerFragment extends RxRoboFragment implements MenuBuilder.G
 
 					getActivity().setTitle(entry.getTitle());
 					getActivity().invalidateOptionsMenu();
-				});
 
-		if (savedInstanceState != null) {
-			viewPager.onRestoreInstanceState(savedInstanceState.getParcelable(PAGER_STATE_KEY));
-		}
-		else if (getArguments() != null && getArguments().containsKey(PAGE_NUMBER_KEY)) {
-			viewPager.setCurrentItem(getArguments().getInt(PAGE_NUMBER_KEY), false);
-		}
+					if (savedInstanceState != null) {
+						viewPager.onRestoreInstanceState(savedInstanceState.getParcelable(PAGER_STATE_KEY));
+					}
+					else if (getArguments() != null && getArguments().containsKey(PAGE_NUMBER_KEY)) {
+						viewPager.setCurrentItem(getArguments().getInt(PAGE_NUMBER_KEY), false);
+					}
+				});
 	}
 
 	private void initImageViewPager(GalleryEntry galleryEntry) {
