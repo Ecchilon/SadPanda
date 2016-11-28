@@ -29,7 +29,6 @@ import com.google.inject.Inject;
 import lombok.Value;
 import okhttp3.CacheControl;
 import okhttp3.FormBody;
-import okhttp3.Headers;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -76,8 +75,6 @@ public class DataLoader {
 
 	private final OkHttpClient client;
 	private final ExhentaiAuth auth;
-
-	private String sHeader;
 
 	@Inject
 	DataLoader(OkHttpClient client, ExhentaiAuth auth) {
@@ -277,7 +274,7 @@ public class DataLoader {
 	private Observable<String> getContent(String url, boolean useCache) {
 		return Observable.just(url).map(requestUrl -> {
 			Request.Builder builder = new Request.Builder()
-					.addHeader(COOKIE, getCookieHeader())
+					.addHeader(COOKIE, auth.getSessionCookie())
 					.url(requestUrl)
 					.get();
 			if (!useCache) {
@@ -465,7 +462,7 @@ public class DataLoader {
 
 					Request request = new Request.Builder()
 							.url(String.format(FAVORITES_URL_EX, entry.getGalleryId(), entry.getToken()))
-							.addHeader(COOKIE, getCookieHeader())
+							.addHeader(COOKIE, auth.getSessionCookie())
 							.post(body)
 							.build();
 
@@ -507,12 +504,7 @@ public class DataLoader {
 		Response response = null;
 		try {
 			response = client.newCall(request).execute();
-			if (this.sHeader == null) {
-				this.sHeader = getSHeader(response.headers());
-				if (sHeader != null) {
-					return reloadWithSHeader(request);
-				}
-			}
+			auth.addCookies(response.headers(ExhentaiAuth.SET_COOKIE));
 			return response.body().string();
 		}
 		catch (IOException e) {
@@ -523,32 +515,5 @@ public class DataLoader {
 				response.body().close();
 			}
 		}
-	}
-
-	private String getSHeader(Headers headers) {
-		for (String header : headers.values(SET_COOKIE)) {
-			if (header.startsWith("s=")) {
-				return header.split(";")[0].substring(2);
-			}
-		}
-
-		return null;
-	}
-
-	/**
-	 * Somehow Exhentai sends a cookie-header 's' along with its favorites. Because
-	 */
-	private String reloadWithSHeader(Request request) {
-		Request.Builder builder = request.newBuilder();
-		builder.header(COOKIE, getCookieHeader());
-		return getBody(builder.build());
-	}
-
-	private String getCookieHeader() {
-		String cookie = auth.getSessionCookie();
-		if (sHeader != null) {
-			cookie += ";s=" + sHeader;
-		}
-		return cookie;
 	}
 }
