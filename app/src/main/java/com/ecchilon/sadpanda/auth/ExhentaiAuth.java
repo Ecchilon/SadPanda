@@ -1,13 +1,15 @@
 package com.ecchilon.sadpanda.auth;
 
-import static com.ecchilon.sadpanda.auth.ExhentaiAuth.ExhentaiError.INCORRECT_AUTH;
 import static com.ecchilon.sadpanda.auth.ExhentaiAuth.ExhentaiError.UNKNOWN;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.net.HttpCookie;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.text.TextUtils;
 import com.google.common.collect.Lists;
@@ -22,6 +24,7 @@ import rx.exceptions.OnErrorThrowable;
 import rx.schedulers.Schedulers;
 
 public class ExhentaiAuth {
+
 	public enum ExhentaiError {
 		NO_USERNAME("You must enter a username"),
 		USER_NOT_FOUND("You must already have registered for an account before you can log in"),
@@ -47,14 +50,10 @@ public class ExhentaiAuth {
 		}
 	}
 
-	private static final String USERNAME_KEY = "pandaUserNameKey";
-	public static final String MEMBER_KEY = "pandaMemberKey";
-	public static final String HASH_KEY = "pandaHashKey";
-	public static final String SESSION_KEY = "pandaSessionKey";
+	public static final String SET_COOKIE = "Set-Cookie";
+	private static final String COOKIE_PREFERENCES = "cookie_prefs";
 
-	public static final String IPB_MEMBER_ID = "ipb_member_id";
-	public static final String IPB_PASS_HASH = "ipb_pass_hash";
-	public static final String IPB_SESSION_ID = "ipb_session_id";
+	private static final String USERNAME_KEY = "pandaUserNameKey";
 
 	private static final String LOGIN = "https://forums.e-hentai.org/index.php?act=Login&CODE=01";
 
@@ -64,19 +63,16 @@ public class ExhentaiAuth {
 	private final AtomicReference<String> sessionCookie = new AtomicReference<>();
 
 	@Inject
-	public ExhentaiAuth(OkHttpClient client, SharedPreferences sharedPreferences) {
+	public ExhentaiAuth(OkHttpClient client, Context context) {
 		this.client = client;
-		this.sharedPreferences = sharedPreferences;
+		this.sharedPreferences = context.getSharedPreferences(COOKIE_PREFERENCES, Context.MODE_PRIVATE);
 	}
 
 	public void logout() {
 		sessionCookie.set(null);
 
 		sharedPreferences.edit()
-				.remove(MEMBER_KEY)
-				.remove(HASH_KEY)
-				.remove(SESSION_KEY)
-				.remove(USERNAME_KEY)
+				.clear()
 				.apply();
 	}
 
@@ -104,7 +100,7 @@ public class ExhentaiAuth {
 				.subscribeOn(Schedulers.io())
 				.observeOn(Schedulers.computation())
 				.map(response -> {
-					String body = null;
+					String body;
 					try {
 						body = response.body().string();
 					}
@@ -112,42 +108,8 @@ public class ExhentaiAuth {
 						throw OnErrorThrowable.from(e);
 					}
 					if (body.contains("You are now logged in as: ")) {
-						List<String> cookies = Lists.newArrayList();
-						for(String cookie : response.headers("Set-Cookie")) {
-							Collections.addAll(cookies, cookie.split(";"));
-						}
-
-						String memberId = null, passHash = null, sessionId = null;
-
-						for (String cookie : cookies) {
-							String[] kvPair = cookie.split("=");
-							if(kvPair.length != 2) {
-								continue;
-							}
-							String key = kvPair[0];
-							String value = kvPair[1];
-							if(IPB_MEMBER_ID.equals(key)) {
-								memberId = value;
-							}
-							else if(IPB_PASS_HASH.equals(key)) {
-								passHash = value;
-							}
-							else if(IPB_SESSION_ID.equals(key)) {
-								sessionId = value;
-							}
-						}
-
-						if((memberId == null || passHash == null || sessionId == null)) {
-							throw OnErrorThrowable.from(new AuthException(INCORRECT_AUTH));
-						}
-
-						sharedPreferences.edit()
-								.putString(MEMBER_KEY, memberId)
-								.putString(HASH_KEY, passHash)
-								.putString(SESSION_KEY, sessionId)
-								.putString(USERNAME_KEY, username)
-								.apply();
-
+						addCookies(response.headers(SET_COOKIE));
+						sharedPreferences.edit().putString(USERNAME_KEY, username).apply();
 						return null;
 					}
 					else {
@@ -163,18 +125,35 @@ public class ExhentaiAuth {
 	}
 
 	public boolean isLoggedIn() {
-		return sharedPreferences.contains(SESSION_KEY);
+		return sharedPreferences.contains(USERNAME_KEY);
 	}
 
 	public String getUserName() {
 		return sharedPreferences.getString(USERNAME_KEY, null);
 	}
 
+	public void addCookies(Collection<String> cookies) {
+		SharedPreferences.Editor editor = sharedPreferences.edit();
+		boolean addedCookie = false;
+		for (String entry : cookies) {
+			for (HttpCookie cookie : HttpCookie.parse(entry)) {
+				editor.putString(cookie.getName(), cookie.getValue());
+				addedCookie = true;
+			}
+		}
+
+		if (addedCookie) {
+			sessionCookie.set(null);
+		}
+
+		editor.apply();
+	}
+
 	public String getSessionCookie() {
 		synchronized (sessionCookie) {
 			String cookie = sessionCookie.get();
-			if(cookie == null) {
-				cookie = createCookie();
+			if (cookie == null) {
+				cookie = createSessionCookie();
 				sessionCookie.set(cookie);
 			}
 
@@ -182,18 +161,14 @@ public class ExhentaiAuth {
 		}
 	}
 
-	private String createCookie() {
-		String[] cookies = new String[] {
-				getCookieKeyValue(IPB_MEMBER_ID, MEMBER_KEY),
-				getCookieKeyValue(IPB_PASS_HASH, HASH_KEY),
-				getCookieKeyValue(IPB_SESSION_ID, SESSION_KEY)
-		};
+	private String createSessionCookie() {
+		Map<String, ?> cookieMap = sharedPreferences.getAll();
+		List<String> cookies = Lists.newArrayListWithExpectedSize(cookieMap.size());
+		for (Map.Entry<String, ?> entry : cookieMap.entrySet()) {
+			cookies.add(entry.getKey() + "=" + entry.getValue());
+		}
 
 		return TextUtils.join(";", cookies);
-	}
-
-	private String getCookieKeyValue(String key, String preferenceKey) {
-		return key + "=" + sharedPreferences.getString(preferenceKey, "");
 	}
 }
 
